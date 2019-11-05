@@ -25,8 +25,8 @@ countriesList = c("United States")
 
 #########################################
 # boolean options for saving
-saveData = TRUE
-savePlot = TRUE
+saveData = FALSE
+savePlot = FALSE
 
 #########################################
 # connect to database
@@ -111,15 +111,30 @@ joinedTableCountGroup <- rename(joinedTableCountGroup,yearlyCount = n)
 
 # calculate statistics
 joinedTableTotals <- joinedTable %>% group_by(diverse) %>% tally()
-joinedTableTotals <- joinedTable %>% group_by(diverse) %>% summarize()
 
-joinedTableSummarize <- joinedTable %>% group_by(diverse,interventionType) %>% tally()
+joinedTableSummarizeInterv <- joinedTable %>% group_by(diverse,interventionType) %>% tally()
+joinedTableSummarizeType <- joinedTable %>% group_by(diverse,study_type) %>% tally()
+joinedTableSummarizePhase <- joinedTable %>% group_by(diverse,phase) %>% tally()
+joinedTableSummarizeAgency <- joinedTable %>% group_by(diverse,agency_class) %>% tally()
+joinedTableSummarizeReported <- joinedTable %>% group_by(diverse,were_results_reported) %>% tally()
+joinedTableSummarizeSite<- joinedTable %>% group_by(diverse,multisite) %>% tally()
+joinedTableSummarizeStatus<- joinedTable %>% group_by(diverse,last_known_status) %>% tally()
+
+
 
 #########################################
 # save data
 if (saveData){
-write.csv(joinedTable,'htnTable_10_24_2019.csv')
-write.csv(joinedTableSummarize,'htnTableSummarize_10_24_2019.csv')
+write.csv(joinedTable,'htnTableTotal_11_4_2019.csv')
+write.csv(joinedTableSummarizeInterv,'htnTableInterv_11_4_2019.csv')
+write.csv(joinedTableSummarizeType,'htnTableType_11_4_2019.csv')
+write.csv(joinedTableSummarizePhase,'htnTablePhase_11_4_2019.csv')
+write.csv(joinedTableSummarizeAgency,'htnTableAgency_11_4_2019.csv')
+write.csv(joinedTableSummarizeReported,'htnTableReported_11_4_2019.csv')
+write.csv(joinedTableSummarizeSite,'htnTableSite_11_4_2019.csv')
+write.csv(joinedTableSummarizeStatus,'htnTableSite_11_4_2019.csv')
+
+
 }
 
 # make plots
@@ -131,7 +146,7 @@ p<-ggplot(joinedTableCount, aes(x=yearStart,y=yearlyCount, group=diverse, color=
   scale_x_continuous(breaks=seq(2009,2019,1),limits=c(2009,2019)) 
 print(p)
 if (savePlot){
-ggsave("trialsByYearConditionsHispBlack.png", units="in", width=5, height=4, dpi=600)
+ggsave("trialsByYearConditionsHispBlack_11_4_2019.png", units="in", width=5, height=4, dpi=600)
 }
 
 p<-ggplot(joinedTableCountGroup, aes(x=yearStart,y=yearlyCount, group=diverseGroup, color=diverseGroup)) +
@@ -142,7 +157,7 @@ p<-ggplot(joinedTableCountGroup, aes(x=yearStart,y=yearlyCount, group=diverseGro
   scale_x_continuous(breaks=seq(2009,2019,1),limits=c(2009,2019)) 
 print(p)
 if (savePlot){
-ggsave("trialsByYearConditionsComb.png", units="in", width=5, height=4, dpi=600)
+ggsave("trialsByYearConditionsComb_11_4_2019.png", units="in", width=5, height=4, dpi=600)
 }
 
 
