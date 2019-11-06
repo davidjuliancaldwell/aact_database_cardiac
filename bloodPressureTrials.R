@@ -35,7 +35,7 @@ con <- dbConnect(drv, dbname="aact",host="aact-db.ctti-clinicaltrials.org", port
 
 # begin loading, filtering, selecting tables
 study_tbl = tbl(src=con,'studies')
-filter_dates <- study_tbl %>% select(official_title,start_date,nct_id,phase,last_known_status,study_type,enrollment) %>% filter(start_date >= startDate)  %>% collect()
+filter_dates <- study_tbl %>% select(official_title,start_date,nct_id,phase,last_known_status,study_type,enrollment,overall_status) %>% filter(start_date >= startDate)  %>% collect()
 
 location_tbl = tbl(src=con,'countries')
 locations <- location_tbl %>% select(nct_id,name) %>% filter(name %in% countriesList) %>% collect()
@@ -70,6 +70,9 @@ facilities_tabulated <- facilities %>% group_by(nct_id) %>% tally()
 facilities_tabulated <- rename(facilities_tabulated,facilitiesCount = n)
 facilities_tabulated <- facilities_tabulated %>% mutate(multisite = ifelse(facilitiesCount>1,TRUE,FALSE))
 
+study_ref_tbl = tbl(src=con,'study_references')
+study_ref <- study_ref_tbl %>% select(nct_id,pmid,reference_type,citation)
+
 study_tbl_browse_conditions = tbl(src=con, 'browse_conditions')
 
 # search within mesh terms
@@ -84,7 +87,11 @@ condsTitle <- filter_dates %>% filter(str_detect(tolower(official_title),pattern
 study_tbl_description = tbl(src=con, 'detailed_descriptions')
 
 # select which trials match all of our conditions
-filtered_table = study_tbl_description %>% select(nct_id,description) %>% filter((nct_id %in% condsMesh$nct_id) | (nct_id %in% condsCond$nct_id) | (nct_id %in% condsTitle$nct_id)) %>% collect()
+selectMesh = condsMesh$nct_id 
+selectCond= condsCond$nct_id
+selectTitle = condsCond$nct_id
+
+filtered_table = study_tbl_description %>% select(nct_id,description) %>% filter((nct_id %in% selectMesh) | (nct_id %in% selectCond) | (nct_id %in% selectTitle)) %>% collect()
 #filtered_table = study_tbl_description %>% filter((nct_id %in% condsMesh$nct_id) | (nct_id %in% condsCond$nct_id)) 
 #filtered_table = study_tbl_description %>% filter(nct_id %in% condsMesh$nct_id) %>% collect()
 
@@ -109,6 +116,10 @@ joinedTableCount <- rename(joinedTableCount,yearlyCount = n)
 joinedTableCountGroup <- joinedTable %>% group_by(yearStart,diverseGroup) %>% count()
 joinedTableCountGroup <- rename(joinedTableCountGroup,yearlyCount = n)
 
+endedTrials = c("terminated","withdrawn")
+
+joinedTableDiverseDiscontinued <- joinedTable %>% filter((diverseGroup == "diverse") & str_detect(tolower(overall_status),pattern = paste(endedTrials,collapse="|"))) %>% collect()
+
 # calculate statistics
 joinedTableTotals <- joinedTable %>% group_by(diverse) %>% tally()
 
@@ -119,20 +130,22 @@ joinedTableSummarizeAgency <- joinedTable %>% group_by(diverse,agency_class) %>%
 joinedTableSummarizeReported <- joinedTable %>% group_by(diverse,were_results_reported) %>% tally()
 joinedTableSummarizeSite<- joinedTable %>% group_by(diverse,multisite) %>% tally()
 joinedTableSummarizeStatus<- joinedTable %>% group_by(diverse,last_known_status) %>% tally()
-
+joinedTableSummarizeOverallStatus <- joinedTable %>% group_by(diverse,overall_status) %>% tally()
 
 
 #########################################
 # save data
 if (saveData){
 write.csv(joinedTable,'htnTableTotal_11_4_2019.csv')
+write.csv(joinedTableDiverseDiscontinued,'htnTableDiscDiverse_11_5_2019.csv')
 write.csv(joinedTableSummarizeInterv,'htnTableInterv_11_4_2019.csv')
 write.csv(joinedTableSummarizeType,'htnTableType_11_4_2019.csv')
 write.csv(joinedTableSummarizePhase,'htnTablePhase_11_4_2019.csv')
 write.csv(joinedTableSummarizeAgency,'htnTableAgency_11_4_2019.csv')
 write.csv(joinedTableSummarizeReported,'htnTableReported_11_4_2019.csv')
 write.csv(joinedTableSummarizeSite,'htnTableSite_11_4_2019.csv')
-write.csv(joinedTableSummarizeStatus,'htnTableSite_11_4_2019.csv')
+write.csv(joinedTableSummarizeStatus,'htnTableStatus_11_4_2019.csv')
+write.csv(joinedTableSummarizeOverallStatus,'htnTableOverallStatus_11_4_2019.csv')
 
 
 }
