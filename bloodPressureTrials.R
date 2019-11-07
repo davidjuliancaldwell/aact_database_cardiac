@@ -46,7 +46,7 @@ sponsor_tbl = tbl(src=con,'sponsors')
 sponsor <- sponsor_tbl %>% select(nct_id,agency_class,lead_or_collaborator)%>% collect()
 
 
-sponsor = sponsor %>% mutate(interventionType = case_when(str_detect(tolower(intervention_comb), pattern = paste('procedure')) ~ 'procedure',
+sponsor = sponsor %>% mutate(interventionClass = case_when((str_detect(tolower(lead_or_collaborator), pattern = paste('lead')) | ()) ~ 'NIH',
                                                                           str_detect(tolower(intervention_comb), pattern = paste('behavioral')) ~ 'behavioral',
                                                                           str_detect(tolower(intervention_comb), pattern = paste('device')) ~ 'device',
                                                                           str_detect(tolower(intervention_comb), pattern = paste('biological')) ~ 'biological',
