@@ -42,7 +42,17 @@ locations <- location_tbl %>% select(nct_id,name) %>% filter(name %in% countries
 
 sponsor_tbl = tbl(src=con,'sponsors')
 #sponsor <- sponsor_tbl %>% select(nct_id,agency_class) %>% collect()
-sponsor <- sponsor_tbl %>% select(nct_id,agency_class,lead_or_collaborator) %>% filter(lead_or_collaborator == 'lead')%>% collect()
+#sponsor <- sponsor_tbl %>% select(nct_id,agency_class,lead_or_collaborator) %>% filter(lead_or_collaborator == 'lead')%>% collect()
+sponsor <- sponsor_tbl %>% select(nct_id,agency_class,lead_or_collaborator)%>% collect()
+
+
+sponsor = sponsor %>% mutate(interventionType = case_when(str_detect(tolower(intervention_comb), pattern = paste('procedure')) ~ 'procedure',
+                                                                          str_detect(tolower(intervention_comb), pattern = paste('behavioral')) ~ 'behavioral',
+                                                                          str_detect(tolower(intervention_comb), pattern = paste('device')) ~ 'device',
+                                                                          str_detect(tolower(intervention_comb), pattern = paste('biological')) ~ 'biological',
+                                                                          str_detect(tolower(intervention_comb), pattern = paste('drug')) ~ 'drug',
+                                                                          TRUE ~ 'other'))
+
 
 calculatedValues_tbl = tbl(src=con,'calculated_values')
 calculatedValues <- calculatedValues_tbl %>% select(nct_id,were_results_reported) %>% collect()
@@ -71,7 +81,9 @@ facilities_tabulated <- rename(facilities_tabulated,facilitiesCount = n)
 facilities_tabulated <- facilities_tabulated %>% mutate(multisite = ifelse(facilitiesCount>1,TRUE,FALSE))
 
 study_ref_tbl = tbl(src=con,'study_references')
-study_ref <- study_ref_tbl %>% select(nct_id,pmid,reference_type,citation)
+study_ref <- study_ref_tbl %>% select(nct_id,pmid,reference_type,citation)%>% filter(reference_type=="results_reference") %>% collect()
+study_ref_tabulated <- study_ref %>% group_by(nct_id) %>% tally()
+study_ref_tabulated <- rename(study_ref_tabulated,pubCount = n)
 
 study_tbl_browse_conditions = tbl(src=con, 'browse_conditions')
 
@@ -100,9 +112,12 @@ filtered_table = study_tbl_description %>% select(nct_id,description) %>% filter
 
 #joinedTable %>% filtered_table %>% inner_join(facilities_tabulated,by="nct_id",copy=TRUE)
 joinedTable <- join_all(list(filtered_table,facilities_tabulated,sponsor,filter_dates,locations,interventionTrial,calculatedValues),by='nct_id',type="inner")
+joinedTable <- left_join(joinedTable,study_ref_tabulated,by='nct_id')
+
 #joinedTable_tabulated <- joinedTable %>% group_by(nct_id) %>% tally()
 #joinedTable <- joinedTable %>% mutate(diverseGroup = as.numeric(str_detect(tolower(description), pattern = paste(stringBlack, collapse = "|"))))
-
+joinedTable <- joinedTable %>% mutate(pubCountBool = case_when(!is.na(pubCount) ~ 'TRUE',
+                                                               TRUE ~ 'FALSE'))
 joinedTable <- joinedTable %>% mutate(diverseGroup = case_when(str_detect(tolower(description), pattern = paste(c(stringBlack,stringHisp), collapse = "|")) ~ 'diverse',
                                                                TRUE ~ 'not diverse'))
 
@@ -131,12 +146,12 @@ joinedTableSummarizeReported <- joinedTable %>% group_by(diverse,were_results_re
 joinedTableSummarizeSite<- joinedTable %>% group_by(diverse,multisite) %>% tally()
 joinedTableSummarizeStatus<- joinedTable %>% group_by(diverse,last_known_status) %>% tally()
 joinedTableSummarizeOverallStatus <- joinedTable %>% group_by(diverse,overall_status) %>% tally()
-
+joinedTableSummarizePubCount <- joinedTable %>% group_by(diverse,pubCountBool) %>% tally()
 
 #########################################
 # save data
 if (saveData){
-write.csv(joinedTable,'htnTableTotal_11_4_2019.csv')
+write.csv(joinedTable,'htnTableTotal_11_6_2019.csv')
 write.csv(joinedTableDiverseDiscontinued,'htnTableDiscDiverse_11_5_2019.csv')
 write.csv(joinedTableSummarizeInterv,'htnTableInterv_11_4_2019.csv')
 write.csv(joinedTableSummarizeType,'htnTableType_11_4_2019.csv')
@@ -146,6 +161,7 @@ write.csv(joinedTableSummarizeReported,'htnTableReported_11_4_2019.csv')
 write.csv(joinedTableSummarizeSite,'htnTableSite_11_4_2019.csv')
 write.csv(joinedTableSummarizeStatus,'htnTableStatus_11_4_2019.csv')
 write.csv(joinedTableSummarizeOverallStatus,'htnTableOverallStatus_11_4_2019.csv')
+write.csv(joinedTableSummarizePubCount,'htnTablePubCount_11_4_2019.csv')
 
 
 }
