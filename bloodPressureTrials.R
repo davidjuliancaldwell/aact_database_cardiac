@@ -84,7 +84,8 @@ facilities_tabulated <- rename(facilities_tabulated,facilitiesCount = n)
 facilities_tabulated <- facilities_tabulated %>% mutate(multisite = ifelse(facilitiesCount>1,TRUE,FALSE))
 
 study_ref_tbl = tbl(src=con,'study_references')
-study_ref <- study_ref_tbl %>% select(nct_id,pmid,reference_type,citation)%>% filter(reference_type=="results_reference") %>% collect()
+# study_ref <- study_ref_tbl %>% select(nct_id,pmid,reference_type,citation)%>% filter(reference_type=="results_reference") %>% collect()
+study_ref <- study_ref_tbl %>% select(nct_id,pmid,reference_type,citation) %>% collect()
 study_ref_tabulated <- study_ref %>% group_by(nct_id) %>% tally()
 study_ref_tabulated <- rename(study_ref_tabulated,pubCount = n)
 
@@ -154,7 +155,7 @@ joinedTableSummarizePubCount <- joinedTable %>% group_by(diverse,pubCountBool) %
 #########################################
 # save data
 if (saveData){
-write.csv(joinedTable,'htnTableTotal_11_6_2019.csv')
+write.csv(joinedTable,'htnTableTotal_11_7_2019.csv')
 write.csv(joinedTableDiverseDiscontinued,'htnTableDiscDiverse_11_5_2019.csv')
 write.csv(joinedTableSummarizeInterv,'htnTableInterv_11_4_2019.csv')
 write.csv(joinedTableSummarizeType,'htnTableType_11_4_2019.csv')
