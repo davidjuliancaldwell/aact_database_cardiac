@@ -46,12 +46,15 @@ sponsor_tbl = tbl(src=con,'sponsors')
 sponsor <- sponsor_tbl %>% select(nct_id,agency_class,lead_or_collaborator)%>% collect()
 
 
-sponsor = sponsor %>% mutate(interventionClass = case_when((str_detect(tolower(lead_or_collaborator), pattern = paste('lead')) | ()) ~ 'NIH',
-                                                                          str_detect(tolower(intervention_comb), pattern = paste('behavioral')) ~ 'behavioral',
-                                                                          str_detect(tolower(intervention_comb), pattern = paste('device')) ~ 'device',
-                                                                          str_detect(tolower(intervention_comb), pattern = paste('biological')) ~ 'biological',
-                                                                          str_detect(tolower(intervention_comb), pattern = paste('drug')) ~ 'drug',
-                                                                          TRUE ~ 'other'))
+sponsor = sponsor %>% group_by(nct_id) %>% mutate(funding = case_when(any(str_detect(tolower(lead_or_collaborator), pattern = paste('lead')) & str_detect(tolower(agency_class),pattern='nih')) ~ 'NIH',
+                                                                      any(str_detect(tolower(lead_or_collaborator), pattern = paste('lead')) & str_detect(tolower(agency_class),pattern='industry')) ~ 'Industry',
+                                                                      any(str_detect(tolower(lead_or_collaborator), pattern = paste('lead')) & str_detect(tolower(agency_class),pattern='u.s. fed')) ~ 'U.S. Fed',
+                                                                      any(str_detect(tolower(lead_or_collaborator), pattern = paste('collaborator')) & str_detect(tolower(agency_class),pattern='industry')) ~ 'Industry',
+                                                                      any(str_detect(tolower(lead_or_collaborator), pattern = paste('collaborator')) & str_detect(tolower(agency_class),pattern='nih')) ~ 'NIH',
+                                                                      any(str_detect(tolower(lead_or_collaborator), pattern = paste('collaborator')) & str_detect(tolower(agency_class),pattern='u.s. fed')) ~ 'U.S. Fed',
+                                                                      TRUE ~ 'other'))
+
+sponsor = distinct(sponsor,nct_id,.keep_all=TRUE) %>% select(nct_id,funding)
 
 
 calculatedValues_tbl = tbl(src=con,'calculated_values')
@@ -141,7 +144,7 @@ joinedTableTotals <- joinedTable %>% group_by(diverse) %>% tally()
 joinedTableSummarizeInterv <- joinedTable %>% group_by(diverse,interventionType) %>% tally()
 joinedTableSummarizeType <- joinedTable %>% group_by(diverse,study_type) %>% tally()
 joinedTableSummarizePhase <- joinedTable %>% group_by(diverse,phase) %>% tally()
-joinedTableSummarizeAgency <- joinedTable %>% group_by(diverse,agency_class) %>% tally()
+joinedTableSummarizeAgency <- joinedTable %>% group_by(diverse,funding) %>% tally()
 joinedTableSummarizeReported <- joinedTable %>% group_by(diverse,were_results_reported) %>% tally()
 joinedTableSummarizeSite<- joinedTable %>% group_by(diverse,multisite) %>% tally()
 joinedTableSummarizeStatus<- joinedTable %>% group_by(diverse,last_known_status) %>% tally()
