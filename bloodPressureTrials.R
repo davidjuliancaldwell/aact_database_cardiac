@@ -11,12 +11,15 @@ library(dplyr)
 library(stringr)
 library(lubridate)
 library(ggplot2)
+library(ggsci)
+library(gridExtra)
 
 #########################################
 # create search parameters
 #strings = c('black','asian','african american','hispanic')
 stringBlack = c('black','african american')
 stringHisp = c('hispanic','latino','latina')
+stringAsian = c('non-hispanic asian','asian american','asian-american','asian')
 startDate = as.Date("2009-01-01")
 termsSearchMesh = c('hypertension','blood pressure','prehypertension')
 termsSearchCondTitle = c('blood pressure','diastolic','systolic','hypertension')
@@ -25,8 +28,8 @@ countriesList = c("United States")
 
 #########################################
 # boolean options for saving
-saveData = FALSE
-savePlot = FALSE
+saveData = TRUE
+savePlot = TRUE
 
 #########################################
 # connect to database
@@ -122,11 +125,12 @@ joinedTable <- left_join(joinedTable,study_ref_tabulated,by='nct_id')
 #joinedTable <- joinedTable %>% mutate(diverseGroup = as.numeric(str_detect(tolower(description), pattern = paste(stringBlack, collapse = "|"))))
 joinedTable <- joinedTable %>% mutate(pubCountBool = case_when(!is.na(pubCount) ~ 'TRUE',
                                                                TRUE ~ 'FALSE'))
-joinedTable <- joinedTable %>% mutate(diverseGroup = case_when(str_detect(tolower(description), pattern = paste(c(stringBlack,stringHisp), collapse = "|")) ~ 'diverse',
+joinedTable <- joinedTable %>% mutate(diverseGroup = case_when(str_detect(tolower(description), pattern = paste(c(stringBlack,stringHisp,stringAsian), collapse = "|")) ~ 'diverse',
                                                                TRUE ~ 'not diverse'))
 
 joinedTable <- joinedTable %>% mutate(diverse = case_when(str_detect(tolower(description), pattern = paste(stringBlack, collapse = "|")) ~ 'black',
                                  str_detect(tolower(description), pattern = paste(stringHisp, collapse = "|"))~  'hispanic',
+                                 str_detect(tolower(description), pattern = paste(stringAsian, collapse = "|"))~  'asian',
                                  TRUE ~ 'not diverse'))
 joinedTable <- joinedTable %>% mutate(yearStart=year(joinedTable$start_date))
 joinedTableCount <- joinedTable %>% group_by(yearStart,diverse) %>% tally()
@@ -155,44 +159,72 @@ joinedTableSummarizePubCount <- joinedTable %>% group_by(diverse,pubCountBool) %
 #########################################
 # save data
 if (saveData){
-write.csv(joinedTable,'htnTableTotal_11_7_2019.csv')
-write.csv(joinedTableDiverseDiscontinued,'htnTableDiscDiverse_11_5_2019.csv')
-write.csv(joinedTableSummarizeInterv,'htnTableInterv_11_4_2019.csv')
-write.csv(joinedTableSummarizeType,'htnTableType_11_4_2019.csv')
-write.csv(joinedTableSummarizePhase,'htnTablePhase_11_4_2019.csv')
-write.csv(joinedTableSummarizeAgency,'htnTableAgency_11_4_2019.csv')
-write.csv(joinedTableSummarizeReported,'htnTableReported_11_4_2019.csv')
-write.csv(joinedTableSummarizeSite,'htnTableSite_11_4_2019.csv')
-write.csv(joinedTableSummarizeStatus,'htnTableStatus_11_4_2019.csv')
-write.csv(joinedTableSummarizeOverallStatus,'htnTableOverallStatus_11_4_2019.csv')
-write.csv(joinedTableSummarizePubCount,'htnTablePubCount_11_4_2019.csv')
+write.csv(joinedTable,'htnTableTotal_11_16_2019.csv')
+write.csv(joinedTableDiverseDiscontinued,'htnTableDiscDiverse_11_16_2019.csv')
+write.csv(joinedTableSummarizeInterv,'htnTableInterv_11_16_2019.csv')
+write.csv(joinedTableSummarizeType,'htnTableType_11_16_2019.csv')
+write.csv(joinedTableSummarizePhase,'htnTablePhase_11_16_2019.csv')
+write.csv(joinedTableSummarizeAgency,'htnTableAgency_11_16_2019.csv')
+write.csv(joinedTableSummarizeReported,'htnTableReported_11_16_2019.csv')
+write.csv(joinedTableSummarizeSite,'htnTableSite_11_16_2019.csv')
+write.csv(joinedTableSummarizeStatus,'htnTableStatus_11_16_2019.csv')
+write.csv(joinedTableSummarizeOverallStatus,'htnTableOverallStatus_11_16_2019.csv')
+write.csv(joinedTableSummarizePubCount,'htnTablePubCount_11_16_2019.csv')
 
 
 }
 
 # make plots
-p<-ggplot(joinedTableCount, aes(x=yearStart,y=yearlyCount, group=diverse, color=diverse)) +
+pInd<-ggplot(joinedTableCount, aes(x=yearStart,y=yearlyCount, group=diverse, color=diverse)) +
+  geom_line()+
+  geom_point() +
+  labs(x = "Year Started",y="Number of Trials",title = "Number of Blood Pressure Trials started per Year") +
+  scale_y_continuous(breaks=seq(0,250,10)) +
+  scale_x_continuous(breaks=seq(2009,2019,1),limits=c(2009,2019)) + 
+  scale_color_jama() +
+  labs(color = 'Type of Trial')
+  
+print(pInd)
+if (savePlot){
+ggsave("trialsByYearConditions_11_16_2019.png", units="in", width=5, height=4, dpi=600)
+}
+
+pComb<-ggplot(joinedTableCountGroup, aes(x=yearStart,y=yearlyCount, group=diverseGroup, color=diverseGroup)) +
   geom_line()+
   geom_point() +
   labs(x = "year",y="count",title = "Number of Blood Pressure Trials Started Per Year") +
   scale_y_continuous(breaks=seq(0,250,10)) +
-  scale_x_continuous(breaks=seq(2009,2019,1),limits=c(2009,2019)) 
-print(p)
+  scale_x_continuous(breaks=seq(2009,2019,1),limits=c(2009,2019)) +
+  scale_color_jama()
+print(pComb)
 if (savePlot){
-ggsave("trialsByYearConditionsHispBlack_11_4_2019.png", units="in", width=5, height=4, dpi=600)
+ggsave("trialsByYearConditionsComb_11_16_2019.png", units="in", width=5, height=4, dpi=600)
 }
 
-p<-ggplot(joinedTableCountGroup, aes(x=yearStart,y=yearlyCount, group=diverseGroup, color=diverseGroup)) +
+# calculate ratio of diverse to non diverse 
+joinedTableRatio <- data.frame(year = unique(joinedTableCountGroup$yearStart))
+joinedTableRatio$ratio = joinedTableCountGroup[joinedTableCountGroup$diverseGroup == 'diverse',]$yearlyCount/joinedTableCountGroup[joinedTableCountGroup$diverseGroup == 'not diverse',]$yearlyCount
+joinedTableRatio$groupRatio = 'Ratio'
+
+pRatio<-ggplot(joinedTableRatio, aes(x=year,y=ratio)) +
   geom_line()+
   geom_point() +
-  labs(x = "year",y="count",title = "Number of Blood Pressure Trials Started Per Year") +
-  scale_y_continuous(breaks=seq(0,250,10)) +
-  scale_x_continuous(breaks=seq(2009,2019,1),limits=c(2009,2019)) 
-print(p)
+  labs(x = "Year Started",y="Ratio of Diverse to Non-Diverse Trials",title = "Ratio of Diverse to Non-Diverse Trials") +
+  scale_x_continuous(breaks=seq(2009,2019,1),limits=c(2009,2019)) +
+  scale_color_jama()
+print(pRatio)
 if (savePlot){
-ggsave("trialsByYearConditionsComb_11_4_2019.png", units="in", width=5, height=4, dpi=600)
+  ggsave("trialsByYearRatio_11_16_2019.png", units="in", width=5, height=4, dpi=600)
 }
 
+grid.arrange(pInd,pRatio,ncol=2)
+pComb <- arrangeGrob(pInd,pRatio,ncol=2)
+pComb <- plot_grid(pInd,pRatio,ncol=2,rel_widths = c(5/9,4/9))
+
+#print(pComb)
+if (savePlot){
+  ggsave(file="trialsByYearConditionsGrid_11_16_2019.png",pComb, units="in", width=10, height=4, dpi=600)
+}
 
 # ### scratch below
 # 
