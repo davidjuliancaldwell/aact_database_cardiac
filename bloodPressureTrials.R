@@ -125,8 +125,9 @@ filtered_table = study_tbl_description %>% select(nct_id,description) %>% filter
 #joinedTable <- join_all(list(filtered_table,facilities_tabulated,sponsor,filter_dates,locations,interventionTrial,calculatedValues),by='nct_id',type="full")
 
 # this is a join that includes all categories, but only ones that match the description 
-joinedTable <- join_all(list(facilities_tabulated,sponsor,filter_dates,locations,interventionTrial,calculatedValues),by='nct_id',type="full")
-joinedTable <- left_join(filtered_table,joinedTable,by='nct_id')
+joinedTable <- join_all(list(facilities_tabulated,sponsor,locations,interventionTrial,calculatedValues),by='nct_id',type="full")
+joinedTable <- left_join(filter_dates,joinedTable,by='nct_id')
+joinedTable <- inner_join(filtered_table,joinedTable,by='nct_id')
 
 
 # this adds pub counts, and NAs for those that dont have pubs
@@ -151,7 +152,6 @@ joinedTable<- joinedTable %>% mutate(numMissing = rowSums(is.na(.)))
 # double check that no trials are double counted
 doubleCounts <- joinedTable %>% group_by(nct_id) %>% summarise(count=n())
 unique(doubleCounts$count)
-
 
 joinedTableCount <- joinedTable %>% group_by(yearStart,diverse) %>% tally()
 joinedTableCount <- rename(joinedTableCount,yearlyCount = n)
@@ -250,7 +250,8 @@ if (savePlot){
 
 pHist<-ggplot(joinedTable, aes(x=numMissing)) +
   geom_histogram(binwidth=1,color="black", fill="white") +
-  labs(x = "Number of Missing",y="Count",title = "Number of Missing Data Values") 
+  labs(x = "Number of Missing",y="Count",title = "Number of Missing Data Values") +
+  xlim(0,8)
 print(pHist)
 if (savePlot){
   ggsave("trialsByYearNumMissing_11_25_2019.png", units="in", width=5, height=4, dpi=600)
