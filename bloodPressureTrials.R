@@ -145,7 +145,13 @@ joinedTable <- joinedTable %>% mutate(diverse = case_when(str_detect(tolower(des
                                  TRUE ~ 'not diverse'))
 joinedTable <- joinedTable %>% mutate(yearStart=year(joinedTable$start_date))
 
+# count number of missing columns
 joinedTable<- joinedTable %>% mutate(numMissing = rowSums(is.na(.)))
+
+# double check that no trials are double counted
+doubleCounts <- joinedTable %>% group_by(nct_id) %>% summarise(count=n())
+unique(doubleCounts$count)
+
 
 joinedTableCount <- joinedTable %>% group_by(yearStart,diverse) %>% tally()
 joinedTableCount <- rename(joinedTableCount,yearlyCount = n)
@@ -235,7 +241,7 @@ if (savePlot){
 
 grid.arrange(pInd,pRatio,ncol=2)
 pComb <- arrangeGrob(pInd,pRatio,ncol=2)
-pComb <- plot_grid(pInd,pRatio,ncol=2,rel_widths = c(5/9,4/9))
+#pComb <- plot_grid(pInd,pRatio,ncol=2,rel_widths = c(5/9,4/9))
 
 #print(pComb)
 if (savePlot){
