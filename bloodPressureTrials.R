@@ -39,6 +39,8 @@ con <- dbConnect(drv, dbname="aact",host="aact-db.ctti-clinicaltrials.org", port
 # begin loading, filtering, selecting tables
 study_tbl = tbl(src=con,'studies')
 filter_dates <- study_tbl %>% select(official_title,start_date,nct_id,phase,last_known_status,study_type,enrollment,overall_status) %>% filter(start_date >= startDate)  %>% collect()
+filter_dates <- filter_dates%>% mutate(phase = replace(phase, phase == "N/A", "Not Applicable"))
+
 
 location_tbl = tbl(src=con,'countries')
 locations <- location_tbl %>% select(nct_id,name) %>% filter(name %in% countriesList) %>% collect()
@@ -118,7 +120,16 @@ filtered_table = study_tbl_description %>% select(nct_id,description) %>% filter
 # joined Tables
 
 #joinedTable %>% filtered_table %>% inner_join(facilities_tabulated,by="nct_id",copy=TRUE)
-joinedTable <- join_all(list(filtered_table,facilities_tabulated,sponsor,filter_dates,locations,interventionTrial,calculatedValues),by='nct_id',type="inner")
+
+# this one was the original inner join
+#joinedTable <- join_all(list(filtered_table,facilities_tabulated,sponsor,filter_dates,locations,interventionTrial,calculatedValues),by='nct_id',type="full")
+
+# this is a join that includes all categories, but only ones that match the description 
+joinedTable <- join_all(list(facilities_tabulated,sponsor,filter_dates,locations,interventionTrial,calculatedValues),by='nct_id',type="full")
+joinedTable <- left_join(filtered_table,joinedTable,by='nct_id')
+
+
+# this adds pub counts, and NAs for those that dont have pubs
 joinedTable <- left_join(joinedTable,study_ref_tabulated,by='nct_id')
 
 #joinedTable_tabulated <- joinedTable %>% group_by(nct_id) %>% tally()
@@ -133,6 +144,9 @@ joinedTable <- joinedTable %>% mutate(diverse = case_when(str_detect(tolower(des
                                  str_detect(tolower(description), pattern = paste(stringAsian, collapse = "|"))~  'asian',
                                  TRUE ~ 'not diverse'))
 joinedTable <- joinedTable %>% mutate(yearStart=year(joinedTable$start_date))
+
+joinedTable<- joinedTable %>% mutate(numMissing = rowSums(is.na(.)))
+
 joinedTableCount <- joinedTable %>% group_by(yearStart,diverse) %>% tally()
 joinedTableCount <- rename(joinedTableCount,yearlyCount = n)
 
@@ -159,17 +173,17 @@ joinedTableSummarizePubCount <- joinedTable %>% group_by(diverse,pubCountBool) %
 #########################################
 # save data
 if (saveData){
-write.csv(joinedTable,'htnTableTotal_11_16_2019.csv')
-write.csv(joinedTableDiverseDiscontinued,'htnTableDiscDiverse_11_16_2019.csv')
-write.csv(joinedTableSummarizeInterv,'htnTableInterv_11_16_2019.csv')
-write.csv(joinedTableSummarizeType,'htnTableType_11_16_2019.csv')
-write.csv(joinedTableSummarizePhase,'htnTablePhase_11_16_2019.csv')
-write.csv(joinedTableSummarizeAgency,'htnTableAgency_11_16_2019.csv')
-write.csv(joinedTableSummarizeReported,'htnTableReported_11_16_2019.csv')
-write.csv(joinedTableSummarizeSite,'htnTableSite_11_16_2019.csv')
-write.csv(joinedTableSummarizeStatus,'htnTableStatus_11_16_2019.csv')
-write.csv(joinedTableSummarizeOverallStatus,'htnTableOverallStatus_11_16_2019.csv')
-write.csv(joinedTableSummarizePubCount,'htnTablePubCount_11_16_2019.csv')
+write.csv(joinedTable,'htnTableTotal_11_25_2019.csv')
+write.csv(joinedTableDiverseDiscontinued,'htnTableDiscDiverse_11_25_2019.csv')
+write.csv(joinedTableSummarizeInterv,'htnTableInterv_11_25_2019.csv')
+write.csv(joinedTableSummarizeType,'htnTableType_11_25_2019.csv')
+write.csv(joinedTableSummarizePhase,'htnTablePhase_11_25_2019.csv')
+write.csv(joinedTableSummarizeAgency,'htnTableAgency_11_25_2019.csv')
+write.csv(joinedTableSummarizeReported,'htnTableReported_11_25_2019.csv')
+write.csv(joinedTableSummarizeSite,'htnTableSite_11_25_2019.csv')
+write.csv(joinedTableSummarizeStatus,'htnTableStatus_11_25_2019.csv')
+write.csv(joinedTableSummarizeOverallStatus,'htnTableOverallStatus_11_25_2019.csv')
+write.csv(joinedTableSummarizePubCount,'htnTablePubCount_11_25_2019.csv')
 
 
 }
@@ -179,26 +193,28 @@ pInd<-ggplot(joinedTableCount, aes(x=yearStart,y=yearlyCount, group=diverse, col
   geom_line()+
   geom_point() +
   labs(x = "Year Started",y="Number of Trials",title = "Number of Blood Pressure Trials started per Year") +
-  scale_y_continuous(breaks=seq(0,250,10)) +
+  # scale_y_continuous(breaks=seq(0,250,10)) +
+  ylim(0,300) +
   scale_x_continuous(breaks=seq(2009,2019,1),limits=c(2009,2019)) + 
   scale_color_jama() +
   labs(color = 'Type of Trial')
   
 print(pInd)
 if (savePlot){
-ggsave("trialsByYearConditions_11_16_2019.png", units="in", width=5, height=4, dpi=600)
+ggsave("trialsByYearConditions_11_25_2019.png", units="in", width=5, height=4, dpi=600)
 }
 
 pComb<-ggplot(joinedTableCountGroup, aes(x=yearStart,y=yearlyCount, group=diverseGroup, color=diverseGroup)) +
   geom_line()+
   geom_point() +
   labs(x = "year",y="count",title = "Number of Blood Pressure Trials Started Per Year") +
-  scale_y_continuous(breaks=seq(0,250,10)) +
+  #scale_y_continuous(breaks=seq(0,250,10)) +
+  ylim(0,300) +
   scale_x_continuous(breaks=seq(2009,2019,1),limits=c(2009,2019)) +
   scale_color_jama()
 print(pComb)
 if (savePlot){
-ggsave("trialsByYearConditionsComb_11_16_2019.png", units="in", width=5, height=4, dpi=600)
+ggsave("trialsByYearConditionsComb_11_25_2019.png", units="in", width=5, height=4, dpi=600)
 }
 
 # calculate ratio of diverse to non diverse 
@@ -214,7 +230,7 @@ pRatio<-ggplot(joinedTableRatio, aes(x=year,y=ratio)) +
   scale_color_jama()
 print(pRatio)
 if (savePlot){
-  ggsave("trialsByYearRatio_11_16_2019.png", units="in", width=5, height=4, dpi=600)
+  ggsave("trialsByYearRatio_11_25_2019.png", units="in", width=5, height=4, dpi=600)
 }
 
 grid.arrange(pInd,pRatio,ncol=2)
@@ -223,7 +239,15 @@ pComb <- plot_grid(pInd,pRatio,ncol=2,rel_widths = c(5/9,4/9))
 
 #print(pComb)
 if (savePlot){
-  ggsave(file="trialsByYearConditionsGrid_11_16_2019.png",pComb, units="in", width=10, height=4, dpi=600)
+  ggsave(file="trialsByYearConditionsGrid_11_25_2019.png",pComb, units="in", width=10, height=4, dpi=600)
+}
+
+pHist<-ggplot(joinedTable, aes(x=numMissing)) +
+  geom_histogram(binwidth=1,color="black", fill="white") +
+  labs(x = "Number of Missing",y="Count",title = "Number of Missing Data Values") 
+print(pHist)
+if (savePlot){
+  ggsave("trialsByYearNumMissing_11_25_2019.png", units="in", width=5, height=4, dpi=600)
 }
 
 # ### scratch below
