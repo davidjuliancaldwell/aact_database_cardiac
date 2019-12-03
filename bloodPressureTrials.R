@@ -137,13 +137,13 @@ joinedTable <- left_join(joinedTable,study_ref_tabulated,by='nct_id')
 #joinedTable <- joinedTable %>% mutate(diverseGroup = as.numeric(str_detect(tolower(description), pattern = paste(stringBlack, collapse = "|"))))
 joinedTable <- joinedTable %>% mutate(pubCountBool = case_when(!is.na(pubCount) ~ 'TRUE',
                                                                TRUE ~ 'FALSE'))
-joinedTable <- joinedTable %>% mutate(diverseGroup = case_when(str_detect(tolower(description), pattern = paste(c(stringBlack,stringHisp,stringAsian), collapse = "|")) ~ 'diverse',
-                                                               TRUE ~ 'not diverse'))
+joinedTable <- joinedTable %>% mutate(diverseGroup = case_when(str_detect(tolower(description), pattern = paste(c(stringBlack,stringHisp,stringAsian), collapse = "|")) ~ 'Diverse',
+                                                               TRUE ~ 'General'))
 
-joinedTable <- joinedTable %>% mutate(diverse = case_when(str_detect(tolower(description), pattern = paste(stringBlack, collapse = "|")) ~ 'black',
-                                 str_detect(tolower(description), pattern = paste(stringHisp, collapse = "|"))~  'hispanic',
-                                 str_detect(tolower(description), pattern = paste(stringAsian, collapse = "|"))~  'asian',
-                                 TRUE ~ 'not diverse'))
+joinedTable <- joinedTable %>% mutate(diverse = case_when(str_detect(tolower(description), pattern = paste(stringBlack, collapse = "|")) ~ 'Black',
+                                 str_detect(tolower(description), pattern = paste(stringHisp, collapse = "|"))~  'Hispanic',
+                                 str_detect(tolower(description), pattern = paste(stringAsian, collapse = "|"))~  'Asian',
+                                 TRUE ~ 'General'))
 joinedTable <- joinedTable %>% mutate(yearStart=year(joinedTable$start_date))
 
 # count number of missing columns
@@ -179,17 +179,17 @@ joinedTableSummarizePubCount <- joinedTable %>% group_by(diverse,pubCountBool) %
 #########################################
 # save data
 if (saveData){
-write.csv(joinedTable,'htnTableTotal_11_25_2019.csv')
-write.csv(joinedTableDiverseDiscontinued,'htnTableDiscDiverse_11_25_2019.csv')
-write.csv(joinedTableSummarizeInterv,'htnTableInterv_11_25_2019.csv')
-write.csv(joinedTableSummarizeType,'htnTableType_11_25_2019.csv')
-write.csv(joinedTableSummarizePhase,'htnTablePhase_11_25_2019.csv')
-write.csv(joinedTableSummarizeAgency,'htnTableAgency_11_25_2019.csv')
-write.csv(joinedTableSummarizeReported,'htnTableReported_11_25_2019.csv')
-write.csv(joinedTableSummarizeSite,'htnTableSite_11_25_2019.csv')
-write.csv(joinedTableSummarizeStatus,'htnTableStatus_11_25_2019.csv')
-write.csv(joinedTableSummarizeOverallStatus,'htnTableOverallStatus_11_25_2019.csv')
-write.csv(joinedTableSummarizePubCount,'htnTablePubCount_11_25_2019.csv')
+write.csv(joinedTable,'htnTableTotal_12_2_2019.csv')
+write.csv(joinedTableDiverseDiscontinued,'htnTableDiscDiverse_12_2_2019.csv')
+write.csv(joinedTableSummarizeInterv,'htnTableInterv_12_2_2019.csv')
+write.csv(joinedTableSummarizeType,'htnTableType_12_2_2019.csv')
+write.csv(joinedTableSummarizePhase,'htnTablePhase_12_2_2019.csv')
+write.csv(joinedTableSummarizeAgency,'htnTableAgency_12_2_2019.csv')
+write.csv(joinedTableSummarizeReported,'htnTableReported_12_2_2019.csv')
+write.csv(joinedTableSummarizeSite,'htnTableSite_12_2_2019.csv')
+write.csv(joinedTableSummarizeStatus,'htnTableStatus_12_2_2019.csv')
+write.csv(joinedTableSummarizeOverallStatus,'htnTableOverallStatus_12_2_2019.csv')
+write.csv(joinedTableSummarizePubCount,'htnTablePubCount_12_2_2019.csv')
 
 
 }
@@ -198,7 +198,7 @@ write.csv(joinedTableSummarizePubCount,'htnTablePubCount_11_25_2019.csv')
 pInd<-ggplot(joinedTableCount, aes(x=yearStart,y=yearlyCount, group=diverse, color=diverse)) +
   geom_line()+
   geom_point() +
-  labs(x = "Year Started",y="Number of Trials",title = "Number of Blood Pressure Trials started per Year") +
+  labs(x = "Year Started",y="Number of Trials") +
   # scale_y_continuous(breaks=seq(0,250,10)) +
   ylim(0,300) +
   scale_x_continuous(breaks=seq(2009,2019,1),limits=c(2009,2019)) + 
@@ -207,36 +207,48 @@ pInd<-ggplot(joinedTableCount, aes(x=yearStart,y=yearlyCount, group=diverse, col
   
 print(pInd)
 if (savePlot){
-ggsave("trialsByYearConditions_11_25_2019.png", units="in", width=5, height=4, dpi=600)
+ggsave("trialsByYearConditions_12_2_2019.png", units="in", width=5, height=4, dpi=600)
 }
 
 pComb<-ggplot(joinedTableCountGroup, aes(x=yearStart,y=yearlyCount, group=diverseGroup, color=diverseGroup)) +
   geom_line()+
   geom_point() +
-  labs(x = "year",y="count",title = "Number of Blood Pressure Trials Started Per Year") +
+  labs(x = "year",y="count",color = 'Type of Trial') +
   #scale_y_continuous(breaks=seq(0,250,10)) +
   ylim(0,300) +
   scale_x_continuous(breaks=seq(2009,2019,1),limits=c(2009,2019)) +
   scale_color_jama()
 print(pComb)
 if (savePlot){
-ggsave("trialsByYearConditionsComb_11_25_2019.png", units="in", width=5, height=4, dpi=600)
+ggsave("trialsByYearConditionsComb_12_2_2019.png", units="in", width=5, height=4, dpi=600)
 }
 
 # calculate ratio of diverse to non diverse 
 joinedTableRatio <- data.frame(year = unique(joinedTableCountGroup$yearStart))
-joinedTableRatio$ratio = joinedTableCountGroup[joinedTableCountGroup$diverseGroup == 'diverse',]$yearlyCount/joinedTableCountGroup[joinedTableCountGroup$diverseGroup == 'not diverse',]$yearlyCount
+joinedTableRatio$ratio = joinedTableCountGroup[joinedTableCountGroup$diverseGroup == 'Diverse',]$yearlyCount/joinedTableCountGroup[joinedTableCountGroup$diverseGroup == 'General',]$yearlyCount
+joinedTableRatio$ratioTotal = joinedTableCountGroup[joinedTableCountGroup$diverseGroup == 'Diverse',]$yearlyCount/(joinedTableCountGroup[joinedTableCountGroup$diverseGroup == 'General',]$yearlyCount + joinedTableCountGroup[joinedTableCountGroup$diverseGroup == 'Diverse',]$yearlyCount)
 joinedTableRatio$groupRatio = 'Ratio'
 
 pRatio<-ggplot(joinedTableRatio, aes(x=year,y=ratio)) +
   geom_line()+
   geom_point() +
-  labs(x = "Year Started",y="Ratio of Diverse to Non-Diverse Trials",title = "Ratio of Diverse to Non-Diverse Trials") +
+  labs(x = "Year Started",y="Ratio of Diverse to General Trials") +
   scale_x_continuous(breaks=seq(2009,2019,1),limits=c(2009,2019)) +
   scale_color_jama()
 print(pRatio)
 if (savePlot){
-  ggsave("trialsByYearRatio_11_25_2019.png", units="in", width=5, height=4, dpi=600)
+  ggsave("trialsByYearRatio_12_2_2019.png", units="in", width=5, height=4, dpi=600)
+}
+
+pRatioTotal<-ggplot(joinedTableRatio, aes(x=year,y=ratioTotal)) +
+  geom_line()+
+  geom_point() +
+  labs(x = "Year Started",y="Ratio of Diverse to All Trials") +
+  scale_x_continuous(breaks=seq(2009,2019,1),limits=c(2009,2019)) +
+  scale_color_jama()
+print(pRatio)
+if (savePlot){
+  ggsave("trialsByYearRatioTotal_12_2_2019.png", units="in", width=5, height=4, dpi=600)
 }
 
 grid.arrange(pInd,pRatio,ncol=2)
@@ -245,16 +257,26 @@ pComb <- arrangeGrob(pInd,pRatio,ncol=2)
 
 #print(pComb)
 if (savePlot){
-  ggsave(file="trialsByYearConditionsGrid_11_25_2019.png",pComb, units="in", width=10, height=4, dpi=600)
+  ggsave(file="trialsByYearConditionsGrid_12_2_2019.png",pComb, units="in", width=10, height=4, dpi=600)
 }
+
+grid.arrange(pInd,pRatioTotal,ncol=2)
+pCombTotal <- arrangeGrob(pInd,pRatio,ncol=2)
+#pComb <- plot_grid(pInd,pRatio,ncol=2,rel_widths = c(5/9,4/9))
+
+#print(pComb)
+if (savePlot){
+  ggsave(file="trialsByYearConditionsGridTotal_12_2_2019.png",pCombTotal, units="in", width=10, height=4, dpi=600)
+}
+
 
 pHist<-ggplot(joinedTable, aes(x=numMissing)) +
   geom_histogram(binwidth=1,color="black", fill="white") +
-  labs(x = "Number of Missing",y="Count",title = "Number of Missing Data Values") +
+  labs(x = "Number of Missing Data Columns",y="Count") +
   xlim(0,8)
 print(pHist)
 if (savePlot){
-  ggsave("trialsByYearNumMissing_11_25_2019.png", units="in", width=5, height=4, dpi=600)
+  ggsave("trialsByYearNumMissing_12_2_2019.png", units="in", width=5, height=4, dpi=600)
 }
 
 # ### scratch below
