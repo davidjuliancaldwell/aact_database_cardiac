@@ -21,6 +21,7 @@ stringBlack = c('black','african american')
 stringHisp = c('hispanic','latino','latina')
 stringAsian = c('non-hispanic asian','asian american','asian-american','asian')
 startDate = as.Date("2009-01-01")
+startDateEnd = as.Date("2019-12-31")
 termsSearchMesh = c('hypertension','blood pressure','prehypertension')
 termsSearchCondTitle = c('blood pressure','diastolic','systolic','hypertension')
 countriesList = c("United States")
@@ -38,7 +39,7 @@ con <- dbConnect(drv, dbname="aact",host="aact-db.ctti-clinicaltrials.org", port
 
 # begin loading, filtering, selecting tables
 study_tbl = tbl(src=con,'studies')
-filter_dates <- study_tbl %>% select(official_title,start_date,nct_id,phase,last_known_status,study_type,enrollment,overall_status) %>% filter(start_date >= startDate)  %>% collect()
+filter_dates <- study_tbl %>% select(official_title,start_date,nct_id,phase,last_known_status,study_type,enrollment,overall_status) %>% filter(start_date >= startDate && start_date <= startDateEnd)  %>% collect()
 filter_dates <- filter_dates%>% mutate(phase = replace(phase, phase == "N/A", "Not Applicable"))
 
 
@@ -161,7 +162,7 @@ joinedTableCountGroup <- rename(joinedTableCountGroup,yearlyCount = n)
 
 endedTrials = c("terminated","withdrawn")
 
-joinedTableDiverseDiscontinued <- joinedTable %>% filter((diverseGroup == "diverse") & str_detect(tolower(overall_status),pattern = paste(endedTrials,collapse="|"))) %>% collect()
+joinedTableDiverseDiscontinued <- joinedTable %>% filter((diverseGroup == "Diverse") & str_detect(tolower(overall_status),pattern = paste(endedTrials,collapse="|"))) %>% collect()
 
 # calculate statistics
 joinedTableTotals <- joinedTable %>% group_by(diverse) %>% tally()
@@ -176,21 +177,26 @@ joinedTableSummarizeStatus<- joinedTable %>% group_by(diverse,last_known_status)
 joinedTableSummarizeOverallStatus <- joinedTable %>% group_by(diverse,overall_status) %>% tally()
 joinedTableSummarizePubCount <- joinedTable %>% group_by(diverse,pubCountBool) %>% tally()
 
+# to avoid excel field size bug, exclude 
+joinedTableNoDescrip <- joinedTable
+joinedTableNoDescrip$description = NULL
+
 #########################################
 # save data
 if (saveData){
-write.csv(joinedTable,'htnTableTotal_12_2_2019.csv')
-write.csv(joinedTableDiverseDiscontinued,'htnTableDiscDiverse_12_2_2019.csv')
-write.csv(joinedTableSummarizeInterv,'htnTableInterv_12_2_2019.csv')
-write.csv(joinedTableSummarizeType,'htnTableType_12_2_2019.csv')
-write.csv(joinedTableSummarizePhase,'htnTablePhase_12_2_2019.csv')
-write.csv(joinedTableSummarizeAgency,'htnTableAgency_12_2_2019.csv')
-write.csv(joinedTableSummarizeReported,'htnTableReported_12_2_2019.csv')
-write.csv(joinedTableSummarizeSite,'htnTableSite_12_2_2019.csv')
-write.csv(joinedTableSummarizeStatus,'htnTableStatus_12_2_2019.csv')
-write.csv(joinedTableSummarizeOverallStatus,'htnTableOverallStatus_12_2_2019.csv')
-write.csv(joinedTableSummarizePubCount,'htnTablePubCount_12_2_2019.csv')
-
+saveRDS(joinedTable, file = "htnRdata_12_8_2019.rds")
+write.csv(joinedTable,'htnTableTotal_12_8_2019.csv')
+write.csv(joinedTableNoDescrip,'htnTableTotalNoDescrip_12_8_2019.csv')
+write.csv(joinedTableDiverseDiscontinued,'htnTableDiscDiverse_12_8_2019.csv')
+write.csv(joinedTableSummarizeInterv,'htnTableInterv_12_8_2019.csv')
+write.csv(joinedTableSummarizeType,'htnTableType_12_8_2019.csv')
+write.csv(joinedTableSummarizePhase,'htnTablePhase_12_8_2019.csv')
+write.csv(joinedTableSummarizeAgency,'htnTableAgency_12_8_2019.csv')
+write.csv(joinedTableSummarizeReported,'htnTableReported_12_8_2019.csv')
+write.csv(joinedTableSummarizeSite,'htnTableSite_12_8_2019.csv')
+write.csv(joinedTableSummarizeStatus,'htnTableStatus_12_8_2019.csv')
+write.csv(joinedTableSummarizeOverallStatus,'htnTableOverallStatus_12_8_2019.csv')
+write.csv(joinedTableSummarizePubCount,'htnTablePubCount_12_8_2019.csv')
 
 }
 
@@ -207,7 +213,7 @@ pInd<-ggplot(joinedTableCount, aes(x=yearStart,y=yearlyCount, group=diverse, col
   
 print(pInd)
 if (savePlot){
-ggsave("trialsByYearConditions_12_2_2019.png", units="in", width=5, height=4, dpi=600)
+ggsave("trialsByYearConditions_12_8_2019.png", units="in", width=5, height=4, dpi=600)
 }
 
 pComb<-ggplot(joinedTableCountGroup, aes(x=yearStart,y=yearlyCount, group=diverseGroup, color=diverseGroup)) +
@@ -220,7 +226,7 @@ pComb<-ggplot(joinedTableCountGroup, aes(x=yearStart,y=yearlyCount, group=divers
   scale_color_jama()
 print(pComb)
 if (savePlot){
-ggsave("trialsByYearConditionsComb_12_2_2019.png", units="in", width=5, height=4, dpi=600)
+ggsave("trialsByYearConditionsComb_12_8_2019.png", units="in", width=5, height=4, dpi=600)
 }
 
 # calculate ratio of diverse to non diverse 
@@ -237,7 +243,7 @@ pRatio<-ggplot(joinedTableRatio, aes(x=year,y=ratio)) +
   scale_color_jama()
 print(pRatio)
 if (savePlot){
-  ggsave("trialsByYearRatio_12_2_2019.png", units="in", width=5, height=4, dpi=600)
+  ggsave("trialsByYearRatio_12_8_2019.png", units="in", width=5, height=4, dpi=600)
 }
 
 pRatioTotal<-ggplot(joinedTableRatio, aes(x=year,y=ratioTotal)) +
@@ -248,7 +254,7 @@ pRatioTotal<-ggplot(joinedTableRatio, aes(x=year,y=ratioTotal)) +
   scale_color_jama()
 print(pRatio)
 if (savePlot){
-  ggsave("trialsByYearRatioTotal_12_2_2019.png", units="in", width=5, height=4, dpi=600)
+  ggsave("trialsByYearRatioTotal_12_8_2019.png", units="in", width=5, height=4, dpi=600)
 }
 
 grid.arrange(pInd,pRatio,ncol=2)
@@ -257,7 +263,7 @@ pComb <- arrangeGrob(pInd,pRatio,ncol=2)
 
 #print(pComb)
 if (savePlot){
-  ggsave(file="trialsByYearConditionsGrid_12_2_2019.png",pComb, units="in", width=10, height=4, dpi=600)
+  ggsave(file="trialsByYearConditionsGrid_12_8_2019.png",pComb, units="in", width=10, height=4, dpi=600)
 }
 
 grid.arrange(pInd,pRatioTotal,ncol=2)
@@ -266,7 +272,7 @@ pCombTotal <- arrangeGrob(pInd,pRatio,ncol=2)
 
 #print(pComb)
 if (savePlot){
-  ggsave(file="trialsByYearConditionsGridTotal_12_2_2019.png",pCombTotal, units="in", width=10, height=4, dpi=600)
+  ggsave(file="trialsByYearConditionsGridTotal_12_8_2019.png",pCombTotal, units="in", width=10, height=4, dpi=600)
 }
 
 
@@ -276,40 +282,6 @@ pHist<-ggplot(joinedTable, aes(x=numMissing)) +
   xlim(0,8)
 print(pHist)
 if (savePlot){
-  ggsave("trialsByYearNumMissing_12_2_2019.png", units="in", width=5, height=4, dpi=600)
+  ggsave("trialsByYearNumMissing_12_8_2019.png", units="in", width=5, height=4, dpi=600)
 }
 
-# ### scratch below
-# 
-# 
-# filteredNum = filtered_table %>% filter(str_detect(tolower(description), pattern = paste(strings, collapse = "|")))
-# filteredNumNotDiverse = filtered_table %>% filter(nct_id %nin% filteredNum$nct_id)
-# 
-# joinedTableFirst <- filter_dates %>% inner_join(filteredNum, by = "nct_id",copy = TRUE)
-# joinedTable <- joinedTableFirst %>% inner_join(locations,by="nct_id",copy=TRUE) %>% collect()
-# yearly_counts <- year(pull(joinedTable,start_date)) 
-# yearly_counts = as.data.frame(yearly_counts)
-# colnames(yearly_counts) <- c("year")
-# yearly_counts_summed <- yearly_counts %>% count(year)
-# yearly_counts_summed$diverse = 'true'
-# 
-# 
-# joinedTableNotDiverseFirst <- filter_dates %>% inner_join(filteredNumNotDiverse, by = "nct_id",copy = TRUE)
-# joinedTableNotDiverse <- joinedTableNotDiverseFirst %>% inner_join(locations,by="nct_id",copy=TRUE) %>% collect()
-# yearly_counts_NotDiverse <- year(pull(joinedTableNotDiverse,start_date))
-# yearly_counts_NotDiverse = as.data.frame(yearly_counts_NotDiverse)
-# colnames(yearly_counts_NotDiverse) <- c("year")
-# yearly_counts_summed_NotDiverse <- yearly_counts_NotDiverse %>% count(year)
-# yearly_counts_summed_NotDiverse$diverse = 'false'
-# 
-# yearly_counts_total <- rbind(yearly_counts_summed,yearly_counts_summed_NotDiverse)
-# 
-# 
-# p<-ggplot(yearly_counts_total, aes(x=year,y=n, group=diverse, color=diverse)) +
-#   geom_line()+
-#   geom_point() +
-#   labs(x = "year",y="count",title = "Number of Blood Pressure Trials Started Per Year") +
-#   scale_y_continuous(breaks=seq(0,250,10)) +
-#   scale_x_continuous(breaks=seq(2009,2019,1),limits=c(2009,2019)) 
-# print(p)
-# #ggsave("trialsByYearConditionsTitle.png", units="in", width=5, height=4, dpi=600)
