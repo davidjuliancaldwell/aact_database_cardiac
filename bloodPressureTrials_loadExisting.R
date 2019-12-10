@@ -21,7 +21,7 @@ stringBlack = c('black','african american')
 stringHisp = c('hispanic','latino','latina')
 stringAsian = c('non-hispanic asian','asian american','asian-american','asian')
 startDate = as.Date("2009-01-01")
-startDateEnd = as.date("2019-12-31")
+startDateEnd = as.date("2018-12-31")
 termsSearchMesh = c('hypertension','blood pressure','prehypertension')
 termsSearchCondTitle = c('blood pressure','diastolic','systolic','hypertension')
 countriesList = c("United States")
@@ -31,14 +31,14 @@ countriesList = c("United States")
 # boolean options for saving
 savePlot = FALSE
 loadExcel = FALSE
-loadRdataFile = TRUE
+loadRdataFile = TRUEf
 
 if (loadExcel){
-joinedTable <- read.csv(file="C:/Users/david/SharedCode/aact/htnTableTotalNoDescrip_12_8_2019.csv", header=TRUE, sep=",",na.strings=c(""))
+joinedTable <- read.csv(file="C:/Users/david/SharedCode/aact/htnTableTotalNoDescrip_12_9_2019.csv", header=TRUE, sep=",",na.strings=c(""))
 }
 
 if (loadRdataFile){
-  joinedTable <- readRDS(file="C:/Users/david/SharedCode/aact/htnRdata_12_8_2019.rds")
+  joinedTable <- readRDS(file="C:/Users/david/SharedCode/aact/htnRdata_12_9_2019.rds")
   
 }
 # double check that no trials are double counted
@@ -78,13 +78,13 @@ pInd<-ggplot(joinedTableCount, aes(x=yearStart,y=yearlyCount, group=diverse, col
   labs(x = "Year Started",y="Number of Trials") +
   # scale_y_continuous(breaks=seq(0,250,10)) +
   ylim(0,300) +
-  scale_x_continuous(breaks=seq(2009,2019,1),limits=c(2009,2019)) + 
+  scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) + 
   scale_color_jama() +
   labs(color = 'Type of Trial')
 
 print(pInd)
 if (savePlot){
-  ggsave("trialsByYearConditions_12_8_2019.png", units="in", width=5, height=4, dpi=600)
+  ggsave("trialsByYearConditions_12_9_2019.png", units="in", width=5, height=4, dpi=600)
 }
 
 pComb<-ggplot(joinedTableCountGroup, aes(x=yearStart,y=yearlyCount, group=diverseGroup, color=diverseGroup)) +
@@ -93,11 +93,11 @@ pComb<-ggplot(joinedTableCountGroup, aes(x=yearStart,y=yearlyCount, group=divers
   labs(x = "year",y="count",color = 'Type of Trial') +
   #scale_y_continuous(breaks=seq(0,250,10)) +
   ylim(0,300) +
-  scale_x_continuous(breaks=seq(2009,2019,1),limits=c(2009,2019)) +
+  scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) +
   scale_color_jama()
 print(pComb)
 if (savePlot){
-  ggsave("trialsByYearConditionsComb_12_8_2019.png", units="in", width=5, height=4, dpi=600)
+  ggsave("trialsByYearConditionsComb_12_9_2019.png", units="in", width=5, height=4, dpi=600)
 }
 
 # calculate ratio of diverse to non diverse 
@@ -110,22 +110,22 @@ pRatio<-ggplot(joinedTableRatio, aes(x=year,y=ratio)) +
   geom_line()+
   geom_point() +
   labs(x = "Year Started",y="Ratio of Diverse to General Trials") +
-  scale_x_continuous(breaks=seq(2009,2019,1),limits=c(2009,2019)) +
+  scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) +
   scale_color_jama()
 print(pRatio)
 if (savePlot){
-  ggsave("trialsByYearRatio_12_8_2019.png", units="in", width=5, height=4, dpi=600)
+  ggsave("trialsByYearRatio_12_9_2019.png", units="in", width=5, height=4, dpi=600)
 }
 
 pRatioTotal<-ggplot(joinedTableRatio, aes(x=year,y=ratioTotal)) +
   geom_line()+
   geom_point() +
   labs(x = "Year Started",y="Ratio of Diverse to All Trials") +
-  scale_x_continuous(breaks=seq(2009,2019,1),limits=c(2009,2019)) +
+  scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) +
   scale_color_jama()
 print(pRatio)
 if (savePlot){
-  ggsave("trialsByYearRatioTotal_12_8_2019.png", units="in", width=5, height=4, dpi=600)
+  ggsave("trialsByYearRatioTotal_12_9_2019.png", units="in", width=5, height=4, dpi=600)
 }
 
 grid.arrange(pInd,pRatio,ncol=2)
@@ -134,7 +134,7 @@ pComb <- arrangeGrob(pInd,pRatio,ncol=2)
 
 #print(pComb)
 if (savePlot){
-  ggsave(file="trialsByYearConditionsGrid_12_8_2019.png",pComb, units="in", width=10, height=4, dpi=600)
+  ggsave(file="trialsByYearConditionsGrid_12_9_2019.png",pComb, units="in", width=10, height=4, dpi=600)
 }
 
 grid.arrange(pInd,pRatioTotal,ncol=2)
@@ -143,7 +143,7 @@ pCombTotal <- arrangeGrob(pInd,pRatio,ncol=2)
 
 #print(pComb)
 if (savePlot){
-  ggsave(file="trialsByYearConditionsGridTotal_12_8_2019.png",pCombTotal, units="in", width=10, height=4, dpi=600)
+  ggsave(file="trialsByYearConditionsGridTotal_12_9_2019.png",pCombTotal, units="in", width=10, height=4, dpi=600)
 }
 
 
@@ -153,5 +153,5 @@ pHist<-ggplot(joinedTable, aes(x=numMissing)) +
   xlim(0,8)
 print(pHist)
 if (savePlot){
-  ggsave("trialsByYearNumMissing_12_8_2019.png", units="in", width=5, height=4, dpi=600)
+  ggsave("trialsByYearNumMissing_12_9_2019.png", units="in", width=5, height=4, dpi=600)
 }
