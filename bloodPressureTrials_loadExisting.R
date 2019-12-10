@@ -77,7 +77,7 @@ pInd<-ggplot(joinedTableCount, aes(x=yearStart,y=yearlyCount, group=diverse, col
   geom_point() +
   labs(x = "Year Started",y="Number of Trials") +
   # scale_y_continuous(breaks=seq(0,250,10)) +
-  ylim(0,300) +
+  ylim(0,max(joinedTableCount$yearlyCount)+10) +
   scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) + 
   scale_color_jama() +
   labs(color = 'Type of Trial')
@@ -92,7 +92,7 @@ pComb<-ggplot(joinedTableCountGroup, aes(x=yearStart,y=yearlyCount, group=divers
   geom_point() +
   labs(x = "year",y="count",color = 'Type of Trial') +
   #scale_y_continuous(breaks=seq(0,250,10)) +
-  ylim(0,300) +
+  ylim(0,max(joinedTableCount$yearlyCount)+10) +
   scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) +
   scale_color_jama()
 print(pComb)
@@ -111,6 +111,7 @@ pRatio<-ggplot(joinedTableRatio, aes(x=year,y=ratio)) +
   geom_point() +
   labs(x = "Year Started",y="Ratio of Diverse to General Trials") +
   scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) +
+  ylim(0,max(joinedTableRatio$ratioTotal)+0.015) +
   scale_color_jama()
 print(pRatio)
 if (savePlot){
@@ -122,6 +123,7 @@ pRatioTotal<-ggplot(joinedTableRatio, aes(x=year,y=ratioTotal)) +
   geom_point() +
   labs(x = "Year Started",y="Ratio of Diverse to All Trials") +
   scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) +
+  ylim(0,max(joinedTableRatio$ratioTotal)+0.015) +
   scale_color_jama()
 print(pRatio)
 if (savePlot){
@@ -155,3 +157,4 @@ print(pHist)
 if (savePlot){
   ggsave("trialsByYearNumMissing_12_9_2019.png", units="in", width=5, height=4, dpi=600)
 }
+
