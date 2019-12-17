@@ -29,8 +29,8 @@ countriesList = c("United States")
 
 #########################################
 # boolean options for saving
-saveData = TRUE
-savePlot = TRUE
+saveData = FALSE
+savePlot = FALSE
 
 #########################################
 # connect to database
@@ -44,7 +44,13 @@ filter_dates <- filter_dates%>% mutate(phase = replace(phase, phase == "N/A", "N
 
 
 location_tbl = tbl(src=con,'countries')
-locations <- location_tbl %>% select(nct_id,name) %>% filter(name %in% countriesList) %>% collect()
+
+# check if country is the only one in a list 
+locations = location_tbl %>% select(nct_id,name) %>% collect()
+locations <- locations %>% group_by(nct_id) %>% summarize(countriesPaste = paste(name,collapse=", ")) %>% filter (countriesPaste == countriesList) %>% collect()
+
+locationsTotal = location_tbl %>% select(nct_id,name) %>% collect()
+locationsTotal = locationsTotal %>% group_by(nct_id) %>% summarize(countriesPaste = paste(name,collapse=", ")) %>% collect()
 
 sponsor_tbl = tbl(src=con,'sponsors')
 #sponsor <- sponsor_tbl %>% select(nct_id,agency_class) %>% collect()
