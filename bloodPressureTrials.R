@@ -103,6 +103,15 @@ study_ref_tabulated <- rename(study_ref_tabulated,pubCount = n)
 
 study_tbl_browse_conditions = tbl(src=con, 'browse_conditions')
 
+
+# baseline counts
+baseline_counts = tbl(src=con,'baseline_counts')
+baselineCounts <- baseline_counts %>% select(nct_id,ctgov_group_code,count) %>% collect()
+
+# baseline measurements
+baseline_measurements = tbl(src=con,'baseline_measurements')
+baselineMeasurements <- baseline_measurements %>% select(nct_id,classification,category,title,ctgov_group_code) %>% collect()
+
 # search within mesh terms
 condsMesh <- study_tbl_browse_conditions %>% select(nct_id,mesh_term) %>% filter(tolower(mesh_term) %in% termsSearchMesh) %>% collect()
 
@@ -246,7 +255,7 @@ pRatio<-ggplot(joinedTableRatio, aes(x=year,y=ratio)) +
   geom_point() +
   labs(x = "Year Started",y="Ratio of Diverse to General Trials") +
   scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) +
-  ylim(0,max(joinedTableRatio$ratioTotal)+0.015) +
+  ylim(0,max(joinedTableRatio$ratio)+0.015) +
   scale_color_jama()
 print(pRatio)
 if (savePlot){
@@ -258,7 +267,7 @@ pRatioTotal<-ggplot(joinedTableRatio, aes(x=year,y=ratioTotal)) +
   geom_point() +
   labs(x = "Year Started",y="Ratio of Diverse to All Trials") +
   scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) +
-  ylim(0,max(joinedTableRatio$ratioTotal)+0.015) +
+  ylim(0,max(joinedTableRatio$ratio)+0.015) +
   scale_color_jama()
 print(pRatio)
 if (savePlot){

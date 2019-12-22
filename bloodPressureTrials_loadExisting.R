@@ -31,7 +31,7 @@ countriesList = c("United States")
 # boolean options for saving
 savePlot = FALSE
 loadExcel = FALSE
-loadRdataFile = TRUEf
+loadRdataFile = TRUE
 
 if (loadExcel){
 joinedTable <- read.csv(file="C:/Users/david/SharedCode/aact/htnTableTotalNoDescrip_12_9_2019.csv", header=TRUE, sep=",",na.strings=c(""))
@@ -111,7 +111,7 @@ pRatio<-ggplot(joinedTableRatio, aes(x=year,y=ratio)) +
   geom_point() +
   labs(x = "Year Started",y="Ratio of Diverse to General Trials") +
   scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) +
-  ylim(0,max(joinedTableRatio$ratioTotal)+0.015) +
+  ylim(0,max(joinedTableRatio$ratio)+0.015) +
   scale_color_jama()
 print(pRatio)
 if (savePlot){
@@ -123,7 +123,7 @@ pRatioTotal<-ggplot(joinedTableRatio, aes(x=year,y=ratioTotal)) +
   geom_point() +
   labs(x = "Year Started",y="Ratio of Diverse to All Trials") +
   scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) +
-  ylim(0,max(joinedTableRatio$ratioTotal)+0.015) +
+  ylim(0,max(joinedTableRatio$ratio)+0.015) +
   scale_color_jama()
 print(pRatio)
 if (savePlot){
