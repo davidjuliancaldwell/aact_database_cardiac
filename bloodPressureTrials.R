@@ -269,7 +269,7 @@ pRatioTotal<-ggplot(joinedTableRatio, aes(x=year,y=ratioTotal)) +
   scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) +
   ylim(0,max(joinedTableRatio$ratio)+0.015) +
   scale_color_jama()
-print(pRatio)
+print(pRatioTotal)
 if (savePlot){
   ggsave("trialsByYearRatioTotal_12_9_2019.png", units="in", width=5, height=4, dpi=600)
 }
@@ -284,7 +284,7 @@ if (savePlot){
 }
 
 grid.arrange(pInd,pRatioTotal,ncol=2)
-pCombTotal <- arrangeGrob(pInd,pRatio,ncol=2)
+pCombTotal <- arrangeGrob(pInd,pRatioTotal,ncol=2)
 #pComb <- plot_grid(pInd,pRatio,ncol=2,rel_widths = c(5/9,4/9))
 
 #print(pComb)
