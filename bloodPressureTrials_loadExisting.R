@@ -68,19 +68,33 @@ joinedTableSummarizeStatus<- joinedTable %>% group_by(diverse,last_known_status)
 joinedTableSummarizeOverallStatus <- joinedTable %>% group_by(diverse,overall_status) %>% tally()
 joinedTableSummarizePubCount <- joinedTable %>% group_by(diverse,pubCountBool) %>% tally()
 
-#########################################
+# calculate ratio of diverse to non diverse 
+joinedTableRatio <- data.frame(year = unique(joinedTableCountGroup$yearStart))
+joinedTableRatio$ratio = joinedTableCountGroup[joinedTableCountGroup$diverseGroup == 'Diverse',]$yearlyCount/joinedTableCountGroup[joinedTableCountGroup$diverseGroup == 'General',]$yearlyCount
+joinedTableRatio$ratioTotal = joinedTableCountGroup[joinedTableCountGroup$diverseGroup == 'Diverse',]$yearlyCount/(joinedTableCountGroup[joinedTableCountGroup$diverseGroup == 'General',]$yearlyCount + joinedTableCountGroup[joinedTableCountGroup$diverseGroup == 'Diverse',]$yearlyCount)
+joinedTableRatio$groupRatio = 'Ratio'
+joinedTableRatio$label = (1:length(joinedTableRatio$year))
 
+#########################################
+# statistical testing 
+tbl = joinedTableRatio$ratio
+
+lmRatio <- lm(ratio~label,data=joinedTableRatio)
+summary(lmRatio)
+
+
+#########################################
 
 # make plots
 pInd<-ggplot(joinedTableCount, aes(x=yearStart,y=yearlyCount, group=diverse, color=diverse)) +
   geom_line()+
   geom_point() +
-  labs(x = "Year Started",y="Number of Trials") +
+  labs(title='Number of Trials by Race Group Enrolled',x = "Year Registered",y="Number of Trials") +
   # scale_y_continuous(breaks=seq(0,250,10)) +
   ylim(0,max(joinedTableCount$yearlyCount)+10) +
   scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) + 
   scale_color_jama() +
-  labs(color = 'Type of Trial')
+  labs(color = 'Race-Specific Enrollment ')
 
 print(pInd)
 if (savePlot){
@@ -90,7 +104,7 @@ if (savePlot){
 pComb<-ggplot(joinedTableCountGroup, aes(x=yearStart,y=yearlyCount, group=diverseGroup, color=diverseGroup)) +
   geom_line()+
   geom_point() +
-  labs(x = "year",y="count",color = 'Type of Trial') +
+  labs(x = "year",y="count",color = 'Race-Specific Enrollment ') +
   #scale_y_continuous(breaks=seq(0,250,10)) +
   ylim(0,max(joinedTableCount$yearlyCount)+10) +
   scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) +
@@ -100,16 +114,11 @@ if (savePlot){
   ggsave("trialsByYearConditionsComb_12_9_2019.png", units="in", width=5, height=4, dpi=600)
 }
 
-# calculate ratio of diverse to non diverse 
-joinedTableRatio <- data.frame(year = unique(joinedTableCountGroup$yearStart))
-joinedTableRatio$ratio = joinedTableCountGroup[joinedTableCountGroup$diverseGroup == 'Diverse',]$yearlyCount/joinedTableCountGroup[joinedTableCountGroup$diverseGroup == 'General',]$yearlyCount
-joinedTableRatio$ratioTotal = joinedTableCountGroup[joinedTableCountGroup$diverseGroup == 'Diverse',]$yearlyCount/(joinedTableCountGroup[joinedTableCountGroup$diverseGroup == 'General',]$yearlyCount + joinedTableCountGroup[joinedTableCountGroup$diverseGroup == 'Diverse',]$yearlyCount)
-joinedTableRatio$groupRatio = 'Ratio'
 
 pRatio<-ggplot(joinedTableRatio, aes(x=year,y=ratio)) +
   geom_line()+
   geom_point() +
-  labs(x = "Year Started",y="Ratio of Diverse to General Trials") +
+  labs(title='Ratio of Diverse Trials over Time',x = "Year Registered",y="Ratio of Diverse to General Trials") +
   scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) +
   ylim(0,max(joinedTableRatio$ratio)+0.015) +
   scale_color_jama()
@@ -121,7 +130,7 @@ if (savePlot){
 pRatioTotal<-ggplot(joinedTableRatio, aes(x=year,y=ratioTotal)) +
   geom_line()+
   geom_point() +
-  labs(x = "Year Started",y="Ratio of Diverse to All Trials") +
+  labs(x = "Year Registered",y="Ratio of Diverse to All Trials") +
   scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) +
   ylim(0,max(joinedTableRatio$ratio)+0.015) +
   scale_color_jama()
