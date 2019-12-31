@@ -251,8 +251,8 @@ ggsave("trialsByYearConditionsComb_12_9_2019.png", units="in", width=5, height=4
 }
 
 pRatio<-ggplot(joinedTableRatio, aes(x=year,y=ratio)) +
-  geom_line()+
-  geom_point() +
+  geom_line(color='steelblue')+
+  geom_point(color='steelblue') +
   labs(title='Ratio of Diverse Trials over Time',x = "Year Registered",y="Ratio of Diverse to General Trials") +
   scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) +
   ylim(0,max(joinedTableRatio$ratio)+0.015) +
@@ -263,8 +263,8 @@ if (savePlot){
 }
 
 pRatioTotal<-ggplot(joinedTableRatio, aes(x=year,y=ratioTotal)) +
-  geom_line()+
-  geom_point() +
+  geom_line(color='steelblue')+
+  geom_point(color='steelblue') +
   labs(x = "Year Registered",y="Ratio of Diverse to All Trials") +
   scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) +
   ylim(0,max(joinedTableRatio$ratio)+0.015) +
