@@ -13,6 +13,8 @@ library(lubridate)
 library(ggplot2)
 library(ggsci)
 library(gridExtra)
+library(cowplot)
+
 
 #########################################
 # create search parameters
@@ -169,6 +171,22 @@ joinedTable<- joinedTable %>% mutate(numMissing = rowSums(is.na(.)))
 doubleCounts <- joinedTable %>% group_by(nct_id) %>% summarise(count=n())
 unique(doubleCounts$count)
 
+
+# add in drug vs. non-drug 
+
+joinedTable <- joinedTable %>% mutate(interventionDrugNonDrug = case_when(str_detect(tolower(intervention_comb), pattern = paste('drug')) ~ 'Drug Intervention',
+                                                                          TRUE ~ 'Non-Drug Intervention'))
+
+# add in industry vs. non industry
+
+joinedTable <- joinedTable %>% mutate(industryNonIndustry = case_when(str_detect(tolower(funding), pattern = paste('industry')) ~ 'Industry Sponsor',
+                                                                      TRUE ~ 'Non-Industry Sponsor'))
+
+# rename race-specific 
+joinedTable <- joinedTable %>% mutate(raceSpecific = case_when(str_detect(diverseGroup, pattern = paste('Diverse')) ~ 'Race-Specific',
+                                                               TRUE ~ 'Non-Race Specific'))
+
+
 joinedTableCount <- joinedTable %>% group_by(yearStart,diverse) %>% tally()
 joinedTableCount <- rename(joinedTableCount,yearlyCount = n)
 
@@ -300,5 +318,54 @@ pHist<-ggplot(joinedTable, aes(x=numMissing)) +
 print(pHist)
 if (savePlot){
   ggsave("trialsByYearNumMissing_12_9_2019.png", units="in", width=5, height=4, dpi=600)
+}
+
+# find max y count values of drug and industry categories 
+joinedTableDrug <- joinedTable %>% group_by(interventionDrugNonDrug,raceSpecific) %>% tally()
+joinedTableIndustry <- joinedTable %>% group_by(industryNonIndustry,raceSpecific) %>% tally()
+maxDrugIndustry = max(c(max(joinedTableDrug$n),max(joinedTableIndustry$n)))
+
+# facet wrap drug 
+pFacetDrug<-ggplot(joinedTable, aes(x=raceSpecific)) +
+  geom_bar(fill='steelblue') +
+  labs(x = "",y="Count") +
+  ylim(0,maxDrugIndustry+50)
+pFacetDrug <- pFacetDrug + facet_wrap(~interventionDrugNonDrug)
+
+print(pFacetDrug)
+if (savePlot){
+  ggsave("trialsByRaceSpecific_2_1_2020.png", units="in", width=5, height=4, dpi=600)
+}
+
+# facet wrap funder
+pFacetFund<-ggplot(joinedTable, aes(x=raceSpecific)) +
+  geom_bar(fill='steelblue') +
+  labs(x = "",y="Count") +
+  ylim(0,maxDrugIndustry+50)
+pFacetFund <- pFacetFund + facet_wrap(~industryNonIndustry)
+
+print(pFacetFund)
+if (savePlot){
+  ggsave("trialsByIndustrySpecific_2_1_2020.png", units="in", width=5, height=4, dpi=600)
+}
+
+# now those two together 
+
+pCombIndDrug <- arrangeGrob(pFacetDrug,pFacetFund,ncol=1)
+
+print(pCombIndDrug)
+if (savePlot){
+  ggsave(file="trialsDrugIndustryGrid_2_1_2019.png",pCombIndDrug, units="in", width=6, height=8, dpi=600)
+}
+
+# now those two together horizontal  
+pFacetFundNoText <- pFacetFund
+pFacetFundNoText + theme(axis.title.y = element_blank(),
+                         axis.text.x = element_blank())
+pCombIndDrugHorz <- arrangeGrob(pFacetDrug,pFacetFundNoText,ncol=2)
+
+print(pCombIndDrugHorz)
+if (savePlot){
+  ggsave(file="trialsDrugIndustryGridHorz_2_1_2019.png",pCombIndDrugHorz, units="in", width=10, height=4, dpi=600)
 }
 

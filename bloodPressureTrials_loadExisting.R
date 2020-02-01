@@ -13,6 +13,7 @@ library(lubridate)
 library(ggplot2)
 library(ggsci)
 library(gridExtra)
+library(cowplot)
 
 #########################################
 # create search parameters
@@ -21,7 +22,7 @@ stringBlack = c('black','african american')
 stringHisp = c('hispanic','latino','latina')
 stringAsian = c('non-hispanic asian','asian american','asian-american','asian')
 startDate = as.Date("2009-01-01")
-startDateEnd = as.date("2018-12-31")
+startDateEnd = as.Date("2018-12-31")
 termsSearchMesh = c('hypertension','blood pressure','prehypertension')
 termsSearchCondTitle = c('blood pressure','diastolic','systolic','hypertension')
 countriesList = c("United States")
@@ -45,6 +46,23 @@ if (loadRdataFile){
 doubleCounts <- joinedTable %>% group_by(nct_id) %>% summarise(count=n())
 unique(doubleCounts$count)
 
+# add in drug vs. non-drug 
+
+joinedTable <- joinedTable %>% mutate(interventionDrugNonDrug = case_when(str_detect(tolower(intervention_comb), pattern = paste('drug')) ~ 'Drug Intervention',
+                                                                   TRUE ~ 'Non-Drug Intervention'))
+
+# add in industry vs. non industry
+
+joinedTable <- joinedTable %>% mutate(industryNonIndustry = case_when(str_detect(tolower(funding), pattern = paste('industry')) ~ 'Industry Sponsor',
+                                                                          TRUE ~ 'Non-Industry Sponsor'))
+
+# rename race-specific 
+joinedTable <- joinedTable %>% mutate(raceSpecific = case_when(str_detect(diverseGroup, pattern = paste('Diverse')) ~ 'Race-Specific',
+                                                               TRUE ~ 'Non-Race Specific'))
+
+
+
+# group by year and diversity group 
 joinedTableCount <- joinedTable %>% group_by(yearStart,diverse) %>% tally()
 joinedTableCount <- rename(joinedTableCount,yearlyCount = n)
 
@@ -160,14 +178,14 @@ prow <- plot_grid(pInd + theme(legend.position = "none"),
                   align='vh',
                   hjust = -1,
                   nrow=1,
-                  rel_widths = c(1,0.5,1))
+                  rel_widths = c(1,0.4,1))
 
 legend <- get_legend(pInd + theme(legend.box.margin=margin(0,0,0,12)))
-pTotal <- prow + draw_grob(legend,2/6,0,.3/3.3,1)
+pTotal <- prow + draw_grob(legend,2/4.5,0,.3/3.3,1)
 print(pTotal)
 
 
-save_plot('trialsByYearConditionsGrid_12_9_2019.png', pTotal, ncol = 2, nrow = 1, base_height = 4, base_width=10)
+save_plot('trialsByYearConditionsGrid_12_9_2019.png', pTotal, ncol = 2, nrow = 1, base_height = 4, base_width=6,dpi=600)
 
 grid.arrange(pInd,pRatioTotal,ncol=2)
 pCombTotal <- arrangeGrob(pInd,pRatioTotal,ncol=2)
@@ -188,3 +206,51 @@ if (savePlot){
   ggsave("trialsByYearNumMissing_12_9_2019.png", units="in", width=5, height=4, dpi=600)
 }
 
+# find max y count values of drug and industry categories 
+joinedTableDrug <- joinedTable %>% group_by(interventionDrugNonDrug,raceSpecific) %>% tally()
+joinedTableIndustry <- joinedTable %>% group_by(industryNonIndustry,raceSpecific) %>% tally()
+maxDrugIndustry = max(c(max(joinedTableDrug$n),max(joinedTableIndustry$n)))
+
+# facet wrap drug 
+pFacetDrug<-ggplot(joinedTable, aes(x=raceSpecific)) +
+  geom_bar(fill='steelblue') +
+  labs(x = "",y="Count") +
+  ylim(0,maxDrugIndustry+50)
+pFacetDrug <- pFacetDrug + facet_wrap(~interventionDrugNonDrug)
+
+print(pFacetDrug)
+if (savePlot){
+  ggsave("trialsByRaceSpecific_2_1_2020.png", units="in", width=5, height=4, dpi=600)
+}
+
+# facet wrap funder
+pFacetFund<-ggplot(joinedTable, aes(x=raceSpecific)) +
+  geom_bar(fill='steelblue') +
+  labs(x = "",y="Count") +
+  ylim(0,maxDrugIndustry+50)
+pFacetFund <- pFacetFund + facet_wrap(~industryNonIndustry)
+
+print(pFacetFund)
+if (savePlot){
+  ggsave("trialsByIndustrySpecific_2_1_2020.png", units="in", width=5, height=4, dpi=600)
+}
+
+# now those two together 
+
+pCombIndDrug <- arrangeGrob(pFacetDrug,pFacetFund,ncol=1)
+
+print(pCombIndDrug)
+if (savePlot){
+  ggsave(file="trialsDrugIndustryGrid_2_1_2019.png",pCombIndDrug, units="in", width=6, height=8, dpi=600)
+}
+
+# now those two together horizontal  
+pFacetFundNoText <- pFacetFund
+pFacetFundNoText + theme(axis.title.y = element_blank(),
+                         axis.text.x = element_blank())
+pCombIndDrugHorz <- arrangeGrob(pFacetDrug,pFacetFundNoText,ncol=2)
+
+print(pCombIndDrugHorz)
+if (savePlot){
+  ggsave(file="trialsDrugIndustryGridHorz_2_1_2019.png",pCombIndDrugHorz, units="in", width=10, height=4, dpi=600)
+}
