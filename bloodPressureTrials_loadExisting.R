@@ -236,7 +236,7 @@ if (savePlot){
 }
 
 # now those two together 
-
+grid.arrange(pFacetDrug,pFacetFund,ncol=1)
 pCombIndDrug <- arrangeGrob(pFacetDrug,pFacetFund,ncol=1)
 
 print(pCombIndDrug)
@@ -246,9 +246,13 @@ if (savePlot){
 
 # now those two together horizontal  
 pFacetFundNoText <- pFacetFund
-pFacetFundNoText + theme(axis.title.y = element_blank(),
-                         axis.text.x = element_blank())
+pFacetFundNoText <- pFacetFundNoText + theme(axis.title.y = element_blank(),
+                         axis.text.y = element_blank(),
+                         axis.ticks.y = element_blank())
+
+grid.arrange(pFacetDrug,pFacetFundNoText,ncol=2)
 pCombIndDrugHorz <- arrangeGrob(pFacetDrug,pFacetFundNoText,ncol=2)
+
 
 print(pCombIndDrugHorz)
 if (savePlot){
