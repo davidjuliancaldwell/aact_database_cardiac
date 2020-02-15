@@ -299,7 +299,7 @@ prowInd <- plot_grid(pInd + theme(legend.position = "none"),
                   rel_widths = c(1,0.1,1))
 
 legend <- get_legend(pInd + theme(legend.box.margin=margin(0,0,0,12)))
-pTotalInd <- prowInd + draw_grob(legend,1.4/4.5,0,.3/3.3,0.8)
+pTotalInd <- prowInd + draw_grob(legend,1.4/4.5,0,.4/3.3,0.75)
 print(pTotalInd)
 
 if (savePlot){
