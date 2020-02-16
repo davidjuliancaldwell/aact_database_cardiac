@@ -16,6 +16,22 @@ library(gridExtra)
 library(cowplot)
 
 #########################################
+# from stack overflow
+grid_arrange_shared_legend <- function(...) {
+  plots <- list(...)
+  g <- ggplotGrob(plots[[1]] + theme(legend.position="bottom"))$grobs
+  legend <- g[[which(sapply(g, function(x) x$name) == "guide-box")]]
+  lheight <- sum(legend$height)
+  grid.arrange(
+    do.call(arrangeGrob, lapply(plots, function(x)
+      x + theme(legend.position="none"))),
+    legend,
+    ncol = 1,
+    heights = unit.c(unit(1, "npc") - lheight, lheight))
+}
+#
+
+#########################################
 # create search parameters
 #strings = c('black','asian','african american','hispanic')
 stringBlack = c('black','african american')
@@ -80,6 +96,17 @@ sponsor = sponsor %>% filter(nct_id %in% handCurated$nct_id) %>% group_by(nct_id
 
 sponsor = distinct(sponsor,nct_id,.keep_all=TRUE) %>% select(nct_id,funding)
 
+sponsorCombined <- sponsor_tbl %>%  select(nct_id,agency_class,lead_or_collaborator)%>% collect()
+sponsorCombined = sponsorCombined %>% filter(nct_id %in% handCurated$nct_id) %>% group_by(nct_id) %>% mutate(fundingComb = case_when(any(str_detect(tolower(lead_or_collaborator), pattern = paste('lead')) & str_detect(tolower(agency_class),pattern='industry')) ~ 'Industry',
+                                                                                                                 any(str_detect(tolower(lead_or_collaborator), pattern = paste('lead')) & str_detect(tolower(agency_class),pattern='nih')) ~ 'Federal',
+                                                                                                                 any(str_detect(tolower(lead_or_collaborator), pattern = paste('lead')) & str_detect(tolower(agency_class),pattern='u.s. fed')) ~ 'Federal',
+                                                                                                                 any(str_detect(tolower(lead_or_collaborator), pattern = paste('collaborator')) & str_detect(tolower(agency_class),pattern='industry')) ~ 'Industry',
+                                                                                                                 any(str_detect(tolower(lead_or_collaborator), pattern = paste('collaborator')) & str_detect(tolower(agency_class),pattern='nih')) ~ 'Federal',
+                                                                                                                 any(str_detect(tolower(lead_or_collaborator), pattern = paste('collaborator')) & str_detect(tolower(agency_class),pattern='u.s. fed')) ~ 'Federal',
+                                                                                                                 TRUE ~ 'other'))
+
+sponsorCombined = distinct(sponsorCombined,nct_id,.keep_all=TRUE) %>% select(nct_id,fundingComb)
+
 
 calculatedValues_tbl = tbl(src=con,'calculated_values')
 calculatedValues <- calculatedValues_tbl  %>% select(nct_id,were_results_reported) %>% collect()
@@ -91,11 +118,11 @@ calculatedValues <- calculatedValues %>% filter(nct_id %in% handCurated$nct_id)
 interventions_tbl = tbl(src=con,'interventions')
 interventions = interventions_tbl %>%  select(nct_id,intervention_type) %>% collect()
 interventions <- interventions %>% filter(nct_id %in% handCurated$nct_id) %>% group_by(nct_id) %>% summarize(intervention_comb = paste(intervention_type,collapse=", "))
-interventionTrial = interventions %>% mutate(interventionType = case_when(str_detect(tolower(intervention_comb), pattern = paste('procedure')) ~ 'procedure',
-                                                                          str_detect(tolower(intervention_comb), pattern = paste('behavioral')) ~ 'behavioral',
-                                                                          str_detect(tolower(intervention_comb), pattern = paste('device')) ~ 'device',
-                                                                          str_detect(tolower(intervention_comb), pattern = paste('biological')) ~ 'biological',
-                                                                          str_detect(tolower(intervention_comb), pattern = paste('drug')) ~ 'drug',
+interventionTrial = interventions %>% mutate(interventionType = case_when(str_detect(tolower(intervention_comb), pattern = paste('procedure')) ~ 'Procedure',
+                                                                          str_detect(tolower(intervention_comb), pattern = paste('behavioral')) ~ 'Behavioral',
+                                                                          str_detect(tolower(intervention_comb), pattern = paste('device')) ~ 'Device',
+                                                                          str_detect(tolower(intervention_comb), pattern = paste('biological')) ~ 'Biological',
+                                                                          str_detect(tolower(intervention_comb), pattern = paste('drug')) ~ 'Drug',
                                                                           TRUE ~ 'other'))
 
 #interventions_nest <- interventions %>% group_by(nct_id) %>% nest() 
@@ -119,7 +146,7 @@ filtered_table = study_tbl_description %>% select(nct_id,description) %>% collec
 filtered_table <- filtered_table %>% filter(nct_id %in% handCurated$nct_id)
 
 # this is a join that includes all categories, but only ones that match the description 
-joinedTable <- join_all(list(filter_dates,facilities_tabulated,sponsor,locations,interventionTrial,calculatedValues),by='nct_id',type="full")
+joinedTable <- join_all(list(filter_dates,facilities_tabulated,sponsor,sponsorCombined,locations,interventionTrial,calculatedValues),by='nct_id',type="full")
 joinedTable <- joinedTable %>% filter(nct_id %in% locations$nct_id)
 joinedTable <- inner_join(filtered_table,joinedTable,by='nct_id')
 
@@ -380,60 +407,70 @@ if (savePlot){
 
 # make facet wrap plots
 # group by year and diversity group 
-interventionInterest <- c("")
-joinedTableCountSelectInterv <- joinedTable %>% filter(interventionalTrial %in% interventionInterest) %>% group_by(yearStart,diverse) %>% tally()
-joinedTableCountSelectInterv <- rename(joinedTableCountSelectInterv,yearlyCount = n)
+interventionInterest <- c("Behavioral","Drug")
+fundingInterest <- c("Federal","Industry")
 
-joinedTableCountGroupSelectInterv <- joinedTable %>% filter(interventionalTrial %in% interventionInterest) %>% group_by(yearStart,diverseGroup) %>% count()
+#joinedTableCountSelectInterv <- joinedTable %>% filter(interventionType %in% interventionInterest) %>% group_by(yearStart,diverse,interventionType) %>% tally()
+#joinedTableCountSelectInterv <- rename(joinedTableCountSelectInterv,yearlyCount = n)
+
+joinedTableCountGroupSelectInterv <- joinedTable %>% filter(interventionType %in% interventionInterest) %>% group_by(yearStart,diverseGroup,interventionType) %>% count()
 joinedTableCountGroupSelectInterv <- rename(joinedTableCountGroupSelectInterv,yearlyCount = n)
 
-joinedTableCountSelectInterv <- joinedTableCount
+#joinedTableCountSelectFund <- joinedTable %>% filter(fundingComb %in% fundingInterest) %>% group_by(yearStart,diverse,fundingComb) %>% tally()
+#joinedTableCountSelectFund <- rename(joinedTableCountSelectFund,yearlyCount = n)
 
-pIndSelectInt<-ggplot(joinedTableCountSelectInterv, aes(x=yearStart,y=yearlyCount, group=diverse, color=diverse)) +
+joinedTableCountGroupSelectFund <- joinedTable %>% filter(fundingComb %in% fundingInterest) %>% group_by(yearStart,diverseGroup,fundingComb) %>% count()
+joinedTableCountGroupSelectFund <- rename(joinedTableCountGroupSelectFund,yearlyCount = n)
+
+pGroupSelectInt<-ggplot(joinedTableCountGroupSelectInterv, aes(x=yearStart,y=yearlyCount, group=diverseGroup, color=diverseGroup)) +
   geom_line()+
   geom_point() +
-  facet_wrap(~ interventionTrial) +
-  labs(title='Number of Trials by Race Group Enrolled',x = "Year Registered",y="Number of Trials") +
+  facet_wrap(~ interventionType) +
+  labs(title='Panel A. Intervention Type',x="",y="") +
   # scale_y_continuous(breaks=seq(0,250,10)) +
-  ylim(0,max(joinedTableCount$yearlyCount)+10) +
+  ylim(0,max(joinedTableCountSelectInterv$yearlyCount)+10) +
   scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) + 
   scale_color_jama() +
   labs(color = 'Race-Specific Enrollment ')
 
-print(pIndSelectInt)
-if (savePlot){
-  ggsave("trialsByYearIntervInd_2_14_2020.png", units="in", width=5, height=4, dpi=600)
-}
+print(pGroupSelectInt)
+#if (savePlot){
+#  ggsave("trialsByYearIntervGroup_2_14_2020.png", units="in", width=5, height=4, dpi=600)
+#}
 
-pComb<-ggplot(joinedTableCountGroupSelectInterv, aes(x=yearStart,y=yearlyCount, group=diverseGroup, color=diverseGroup)) +
+pGroupSelectFund<-ggplot(joinedTableCountGroupSelectFund, aes(x=yearStart,y=yearlyCount, group=diverseGroup, color=diverseGroup)) +
   geom_line()+
   geom_point() +
-  facet_wrap(~ interventionTrial)
-  labs(x = "year",y="count",color = 'Race-Specific Enrollment ') +
-  #scale_y_continuous(breaks=seq(0,250,10)) +
-  ylim(0,max(joinedTableCount$yearlyCount)+10) +
-  scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) +
-  scale_color_jama()
-print(pComb)
+  facet_wrap(~ fundingComb) +
+  labs(title='Panel B. Funding Type',x = "Year Registered",y="Number of Trials") +
+  # scale_y_continuous(breaks=seq(0,250,10)) +
+  ylim(0,max(joinedTableCountSelectInterv$yearlyCount)+10) +
+  scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) + 
+  scale_color_jama() +
+  labs(color = 'Race-Specific Enrollment ')
+
+print(pGroupSelectFund)
+#if (savePlot){
+#  ggsave("trialsByYearFundGroup_2_14_2020.png", units="in", width=5, height=4, dpi=600)
+#}
+
+#grid.arrange(pGroupSelectInt,pGroupSelectFund,ncol=1)
+#pGroupFundInt <- arrangeGrob(pFacetDrug,pFacetFundNoText,ncol=1)
+
+prowFundInt <- plot_grid(pGroupSelectInt + theme(legend.position = "none"),
+                     pGroupSelectFund + theme(legend.position = "none"),
+                     NULL,
+                     align='vh',
+                     hjust = -1,
+                     nrow=3,
+                     rel_widths = c(1,1,1),
+                     rel_heights = c(1,1,0.3))
+
+legend <- get_legend(pGroupSelectInt + theme(legend.box.margin=margin(0,0,0,12)))
+pTotalFundInt <- prowFundInt + draw_grob(legend,1.7/4.5,0,1/3.3,0.12)
+print(pTotalFundInt)
+
+
 if (savePlot){
-  ggsave("trialsByYearIntervGroup_2_14_2020.png", units="in", width=5, height=4, dpi=600)
-}
-
-
-grid.arrange(pFacetDrug,pFacetFundNoText,ncol=2)
-pCombIndDrugHorz <- arrangeGrob(pFacetDrug,pFacetFundNoText,ncol=2)
-
-
-print(pCombIndDrugHorz)
-if (savePlot){
-  ggsave(file="trialsDrugIndustryGridHorz_2_1_2019.png",pCombIndDrugHorz, units="in", width=10, height=4, dpi=600)
-}
-
-grid.arrange(pFacetDrug,pFacetFundNoText,ncol=2)
-pCombIndDrugHorz <- arrangeGrob(pFacetDrug,pFacetFundNoText,ncol=2)
-
-
-print(pCombIndDrugHorz)
-if (savePlot){
-  ggsave(file="trialsDrugIndustryGridHorz_2_1_2019.png",pCombIndDrugHorz, units="in", width=10, height=4, dpi=600)
+  ggsave(file="trialsDrugIndustryGridHorz_2_14_2019.png",pTotalFundInt, units="in", width=8, height=8, dpi=600)
 }
