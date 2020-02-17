@@ -118,7 +118,7 @@ facilities_tabulated <- facilities_tabulated %>% mutate(multisite = ifelse(facil
 study_ref_tbl = tbl(src=con,'study_references')
 # study_ref <- study_ref_tbl %>% select(nct_id,pmid,reference_type,citation)%>% filter(reference_type=="results_reference") %>% collect()
 study_ref <- study_ref_tbl %>% select(nct_id,pmid,reference_type,citation) %>% collect()
-study_ref_tabulated <- study_ref %>% filter(nct_id %in% handCurated$nct_id) %>% group_by(nct_id) %>% tally()
+study_ref_tabulated <- study_ref %>% filter(nct_id %in% handCurated$nct_id) %>% filter(reference_type == 'results_reference') %>% group_by(nct_id) %>% tally()
 study_ref_tabulated <- rename(study_ref_tabulated,pubCount = n)
 
 #study_tbl_description = tbl(src=con, 'detailed_descriptions')
@@ -229,7 +229,7 @@ if (saveData){
   write.csv(joinedTableSummarizeReported,'htnTableReported_2_14_2020.csv')
   write.csv(joinedTableSummarizeSite,'htnTableSite_2_14_2020.csv')
   write.csv(joinedTableSummarizeStatus,'htnTableStatus_2_14_2020.csv')
-  write.csv(joinedTableSummarizeOverallStatus,'htnTableOverallStatus_2_14_2020.cs')
+  write.csv(joinedTableSummarizeOverallStatus,'htnTableOverallStatus_2_14_2020.csv')
   write.csv(joinedTableSummarizePubCount,'htnTablePubCount_2_14_2020.csv')
 }
 
