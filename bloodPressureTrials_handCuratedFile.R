@@ -18,7 +18,6 @@ library(cowplot)
 #########################################
 # create search parameters
 startDate = as.Date("2009-01-01")
-startDateEnd = as.Date("2018-12-31")
 countriesList = c("United States")
 `%nin%` = Negate(`%in%`)
 
@@ -38,9 +37,10 @@ con <- dbConnect(drv, dbname="aact",host="aact-db.ctti-clinicaltrials.org", port
 
 # begin loading, filtering, selecting tables
 study_tbl = tbl(src=con,'studies')
-#filter_dates <- study_tbl %>% select(official_title,start_date,nct_id,phase,last_known_status,study_type,enrollment,overall_status) %>% filter(start_date >= startDate && start_date <= startDateEnd && study_type == 'Interventional')  %>% collect()
-filter_dates <- study_tbl %>% select(official_title,start_date,nct_id,phase,last_known_status,study_type,enrollment,overall_status) %>% collect()
-filter_dates <- filter_dates%>% filter(nct_id %in% handCurated$nct_id) %>% mutate(phase = replace(phase, phase == "N/A", "Not Applicable"))
+#filter_dates <- study_tbl %>% select(official_title,start_date,start_month_year,nct_id,phase,last_known_status,study_type,enrollment,overall_status) %>% filter(start_date >= startDate & start_date <= startDateEnd & study_type == 'Interventional')  %>% collect()
+filter_dates <- study_tbl %>% select(official_title,study_first_posted_date,verification_date,start_date,start_month_year,nct_id,phase,last_known_status,study_type,enrollment,overall_status) %>% filter(start_date >= startDate & study_type == 'Interventional')  %>% collect()
+filter_dates <- filter_dates %>% filter(nct_id %in% handCurated$nct_id)
+#filter_dates <- study_tbl %>% select(official_title,start_date,start_month_year,nct_id,phase,last_known_status,study_type,enrollment,overall_status) %>% collect()
 
 location_tbl = tbl(src=con,'countries')
 
@@ -128,12 +128,10 @@ study_ref_tabulated <- rename(study_ref_tabulated,pubCount = n)
 #filtered_table <- filtered_table %>% filter(nct_id %in% handCurated$nct_id)
 
 # this is a join that includes all categories, but only ones that match the description 
-joinedTable <- join_all(list(filter_dates,facilities_tabulated,sponsor,sponsorCombined,locations,interventionTrial,interventionTrialCombined,calculatedValues),by='nct_id',type="full")
-joinedTable <- joinedTable %>% filter(nct_id %in% locations$nct_id)
-#joinedTable <- inner_join(filtered_table,joinedTable,by='nct_id')
-
+joinedTable <- join_all(list(filter_dates,facilities_tabulated,sponsor,sponsorCombined,interventionTrial,interventionTrialCombined,calculatedValues),by='nct_id',type="full")
+joinedTable <- joinedTable %>% filter((nct_id %in% locations$nct_id) & (nct_id %in% filter_dates$nct_id))
 # get rid of any NA start dates
-joinedTable <- joinedTable[complete.cases(joinedTable$start_date),]
+#joinedTable <- joinedTable[complete.cases(joinedTable$start_date),]
 
 # this adds pub counts, and NAs for those that dont have pubs
 joinedTable <- left_join(joinedTable,study_ref_tabulated,by='nct_id')
@@ -150,7 +148,7 @@ joinedTable <- inner_join(joinedTable,handCuratedShrunk,by='nct_id')
 joinedTable <- joinedTable %>% mutate(diverseGroup = case_when(str_detect(tolower(diverse), pattern = paste('non-race specific')) ~ 'Non-race specific',
                                                                TRUE ~ 'Race-specific'))
 
-joinedTable <- joinedTable %>% mutate(yearStart=year(joinedTable$start_date))
+joinedTable <- joinedTable %>% mutate(yearStart=year(joinedTable$study_first_posted))
 
 # count number of missing columns
 joinedTable<- joinedTable %>% mutate(numMissing = rowSums(is.na(.)))
