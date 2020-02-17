@@ -41,6 +41,8 @@ study_tbl = tbl(src=con,'studies')
 filter_dates <- study_tbl %>% select(official_title,study_first_posted_date,verification_date,start_date,start_month_year,nct_id,phase,last_known_status,study_type,enrollment,overall_status) %>% filter(start_date >= startDate & study_type == 'Interventional')  %>% collect()
 filter_dates <- filter_dates %>% filter(nct_id %in% handCurated$nct_id)
 #filter_dates <- study_tbl %>% select(official_title,start_date,start_month_year,nct_id,phase,last_known_status,study_type,enrollment,overall_status) %>% collect()
+filter_dates <- filter_dates%>% mutate(phase = replace(phase, phase == "N/A", "Not Applicable"))
+
 
 location_tbl = tbl(src=con,'countries')
 
