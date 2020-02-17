@@ -149,14 +149,14 @@ study_ref <- study_ref_tbl %>% select(nct_id,pmid,reference_type,citation) %>% c
 study_ref_tabulated <- study_ref %>% filter(nct_id %in% handCurated$nct_id) %>% group_by(nct_id) %>% tally()
 study_ref_tabulated <- rename(study_ref_tabulated,pubCount = n)
 
-study_tbl_description = tbl(src=con, 'detailed_descriptions')
-filtered_table = study_tbl_description %>% select(nct_id,description) %>% collect()
-filtered_table <- filtered_table %>% filter(nct_id %in% handCurated$nct_id)
+#study_tbl_description = tbl(src=con, 'detailed_descriptions')
+#filtered_table = study_tbl_description %>% select(nct_id,description) %>% collect()
+#filtered_table <- filtered_table %>% filter(nct_id %in% handCurated$nct_id)
 
 # this is a join that includes all categories, but only ones that match the description 
 joinedTable <- join_all(list(filter_dates,facilities_tabulated,sponsor,sponsorCombined,locations,interventionTrial,interventionTrialCombined,calculatedValues),by='nct_id',type="full")
 joinedTable <- joinedTable %>% filter(nct_id %in% locations$nct_id)
-joinedTable <- inner_join(filtered_table,joinedTable,by='nct_id')
+#joinedTable <- inner_join(filtered_table,joinedTable,by='nct_id')
 
 # get rid of any NA start dates
 joinedTable <- joinedTable[complete.cases(joinedTable$start_date),]
