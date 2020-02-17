@@ -98,6 +98,8 @@ if (saveData){
 
 #########################################
 
+#########################################
+
 # make plots
 pInd<-ggplot(joinedTableCount, aes(x=yearStart,y=yearlyCount, group=diverse, color=diverse)) +
   geom_line()+
@@ -117,7 +119,7 @@ if (savePlot){
 pComb<-ggplot(joinedTableCountGroup, aes(x=yearStart,y=yearlyCount, group=diverseGroup, color=diverseGroup)) +
   geom_line()+
   geom_point() +
-  labs(title="Number of Hypertension Clinical Trials \nRegistered by Race-Specific Status, by Year",x = "year",y="count",color = 'Race-Specific Enrollment ') +
+  labs(title="Number of Hypertension Clinical Trials \nRegistered by Race-Specific Status, by Year",x = "Year Registered",y="Number of Trials",color = 'Race-Specific Enrollment ') +
   #scale_y_continuous(breaks=seq(0,250,10)) +
   ylim(0,max(joinedTableCount$yearlyCount)+10) +
   scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) +
@@ -176,12 +178,12 @@ if (savePlot){
 }
 
 prowInd <- plot_grid(pInd + theme(legend.position = "none"),
-                  NULL,
-                  pRatio + theme(legend.position = "none"),
-                  align='vh',
-                  hjust = -1,
-                  nrow=1,
-                  rel_widths = c(1,0.1,1))
+                     NULL,
+                     pRatio + theme(legend.position = "none"),
+                     align='vh',
+                     hjust = -1,
+                     nrow=1,
+                     rel_widths = c(1,0.1,1))
 
 legend <- get_legend(pInd + theme(legend.box.margin=margin(0,0,0,12)))
 pTotalInd <- prowInd + draw_grob(legend,1.4/4.5,0,.4/3.3,0.75)
@@ -236,7 +238,7 @@ pFacetFund <- pFacetFund + facet_wrap(~industryNonIndustry)
 
 print(pFacetFund)
 if (savePlot){
-  ggsave("trialsByIndustrySpecific_2_1_2020.png", units="in", width=5, height=4, dpi=600)
+  ggsave("trialsByIndustrySpecific_2_14_2020.png", units="in", width=5, height=4, dpi=600)
 }
 
 # now those two together 
@@ -245,14 +247,14 @@ pCombIndDrug <- arrangeGrob(pFacetDrug,pFacetFund,ncol=1)
 
 print(pCombIndDrug)
 if (savePlot){
-  ggsave(file="trialsDrugIndustryGrid_2_1_2019.png",pCombIndDrug, units="in", width=6, height=8, dpi=600)
+  ggsave(file="trialsDrugIndustryGrid_2_14_2019.png",pCombIndDrug, units="in", width=6, height=8, dpi=600)
 }
 
 # now those two together horizontal  
 pFacetFundNoText <- pFacetFund
 pFacetFundNoText <- pFacetFundNoText + theme(axis.title.y = element_blank(),
-                         axis.text.y = element_blank(),
-                         axis.ticks.y = element_blank())
+                                             axis.text.y = element_blank(),
+                                             axis.ticks.y = element_blank())
 
 grid.arrange(pFacetDrug,pFacetFundNoText,ncol=2)
 pCombIndDrugHorz <- arrangeGrob(pFacetDrug,pFacetFundNoText,ncol=2)
@@ -260,7 +262,7 @@ pCombIndDrugHorz <- arrangeGrob(pFacetDrug,pFacetFundNoText,ncol=2)
 
 print(pCombIndDrugHorz)
 if (savePlot){
-  ggsave(file="trialsDrugIndustryGridHorz_2_1_2019.png",pCombIndDrugHorz, units="in", width=10, height=4, dpi=600)
+  ggsave(file="trialsDrugIndustryGridHorz_2_14_2019.png",pCombIndDrugHorz, units="in", width=10, height=4, dpi=600)
 }
 
 ####### make facet wrap plots
@@ -318,13 +320,13 @@ print(pGroupSelectFund)
 #pGroupFundInt <- arrangeGrob(pFacetDrug,pFacetFundNoText,ncol=1)
 
 prowFundInt <- plot_grid(pGroupSelectInt + theme(legend.position = "none"),
-                     pGroupSelectFund + theme(legend.position = "none"),
-                     NULL,
-                     align='vh',
-                     hjust = -1,
-                     nrow=3,
-                     rel_widths = c(1,1,1),
-                     rel_heights = c(3,3,1))
+                         pGroupSelectFund + theme(legend.position = "none"),
+                         NULL,
+                         align='vh',
+                         hjust = -1,
+                         nrow=3,
+                         rel_widths = c(1,1,1),
+                         rel_heights = c(3,3,1))
 
 legend <- get_legend(pGroupSelectInt + theme(legend.box.margin=margin(0,0,0,12)))
 pTotalFundInt <- prowFundInt + draw_grob(legend,1.7/4.5,0,1/3.3,0.12)

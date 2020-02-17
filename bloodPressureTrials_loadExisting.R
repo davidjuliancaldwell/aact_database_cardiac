@@ -46,22 +46,6 @@ if (loadRdataFile){
 doubleCounts <- joinedTable %>% group_by(nct_id) %>% summarise(count=n())
 unique(doubleCounts$count)
 
-# add in drug vs. non-drug 
-
-joinedTable <- joinedTable %>% mutate(interventionDrugNonDrug = case_when(str_detect(tolower(intervention_comb), pattern = paste('drug')) ~ 'Drug Intervention',
-                                                                   TRUE ~ 'Non-Drug Intervention'))
-
-# add in industry vs. non industry
-
-joinedTable <- joinedTable %>% mutate(industryNonIndustry = case_when(str_detect(tolower(funding), pattern = paste('industry')) ~ 'Industry Sponsor',
-                                                                          TRUE ~ 'Non-Industry Sponsor'))
-
-# rename race-specific 
-joinedTable <- joinedTable %>% mutate(raceSpecific = case_when(str_detect(diverseGroup, pattern = paste('Diverse')) ~ 'Race-Specific',
-                                                               TRUE ~ 'Non-Race Specific'))
-
-
-
 # group by year and diversity group 
 joinedTableCount <- joinedTable %>% group_by(yearStart,diverse) %>% tally()
 joinedTableCount <- rename(joinedTableCount,yearlyCount = n)
