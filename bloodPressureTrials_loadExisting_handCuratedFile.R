@@ -417,7 +417,6 @@ if (savePlot){
 # group by year and diversity group 
 interventionInterest <- c("Behavioral","Pharmaceutical")
 fundingInterest <- c("Public","Industry")
-ymax = max(joinedTableCountGroupSelectFund$yearlyCount,joinedTableCountGroupSelectInterv$yearlyCount)
 
 #joinedTableCountSelectInterv <- joinedTable %>% filter(interventionType %in% interventionInterest) %>% group_by(yearStart,diverse,interventionType) %>% tally()
 #joinedTableCountSelectInterv <- rename(joinedTableCountSelectInterv,yearlyCount = n)
@@ -430,6 +429,8 @@ joinedTableCountGroupSelectInterv <- rename(joinedTableCountGroupSelectInterv,ye
 
 joinedTableCountGroupSelectFund <- joinedTable %>% filter(fundingComb %in% fundingInterest) %>% group_by(yearStart,diverseGroup,fundingComb) %>% count()
 joinedTableCountGroupSelectFund <- rename(joinedTableCountGroupSelectFund,yearlyCount = n)
+
+ymax = max(joinedTableCountGroupSelectFund$yearlyCount,joinedTableCountGroupSelectInterv$yearlyCount)
 
 pGroupSelectInt<-ggplot(joinedTableCountGroupSelectInterv, aes(x=yearStart,y=yearlyCount, group=diverseGroup, color=diverseGroup)) +
   geom_line()+
@@ -556,3 +557,23 @@ if (savePlot){
   ggsave(file="trialsDrugIndustryGridHorz3way_2_14_2019.png",prowFundInt, units="in", width=10, height=8, dpi=600)
 }
 
+
+lay <- rbind(c(1,NA),c(2))
+grid.arrange(pGroupSelectInt,pGroupSelectFund + theme(legend.position = "none"),
+             ncol=2,
+             widths = c(8,1),
+             layout_matrix = lay
+)
+
+
+lay <- rbind(c(1,NA),c(2))
+pTest <- arrangeGrob(pGroupSelectInt,pGroupSelectFund + theme(legend.position = "none"),
+                     ncol=2,
+                     widths = c(8,1),
+                     layout_matrix = lay
+)
+
+
+if (savePlot){
+  ggsave(file="trialsDrugIndustryGridHorz3wayGRIDARRANGE_2_14_2019.png",pTest, units="in", width=10, height=8, dpi=600)
+}
