@@ -25,12 +25,152 @@ countriesList = c("United States")
 #########################################
 # boolean options for saving
 savePlot = FALSE
+loadExcel = TRUE
+saveData = TRUE
 
 handCurated <- read.csv(file="C:/Users/david/SharedCode/aact/NCT_Race_All.csv", header=TRUE, sep=",",na.strings=c(""))
-joinedTable <- readRDS(file="C:/Users/david/SharedCode/aact/htnRdata_2_14_2020.rds")
-  
+
+
 names(handCurated)[1] <- "nct_id"
 names(handCurated)[2] <- "diverse"
+
+# connect to database
+drv <- dbDriver('PostgreSQL')
+con <- dbConnect(drv, dbname="aact",host="aact-db.ctti-clinicaltrials.org", port=5432, user="djcald", password="DD968radford")
+
+# begin loading, filtering, selecting tables
+study_tbl = tbl(src=con,'studies')
+filter_dates <- study_tbl %>% select(official_title,start_date,nct_id,phase,last_known_status,study_type,enrollment,overall_status) %>% filter(start_date >= startDate && start_date <= startDateEnd && study_type == 'Interventional')  %>% collect()
+filter_dates <- filter_dates%>% filter(nct_id %in% handCurated$nct_id) %>% mutate(phase = replace(phase, phase == "N/A", "Not Applicable"))
+
+location_tbl = tbl(src=con,'countries')
+
+# check if country is the only one in a list 
+locations = location_tbl %>% select(nct_id,name)  %>% collect()
+locations <- locations %>% filter(nct_id %in% handCurated$nct_id) %>%  group_by(nct_id) %>% summarize(countriesPaste = paste(name,collapse=", ")) %>% filter (countriesPaste == countriesList) %>% collect()
+
+#locationsTotal = location_tbl %>% select(nct_id,name) %>%  collect()
+#locationsTotal = locationsTotal %>% filter(nct_id %in% handCurated$nct_id) %>% group_by(nct_id) %>% summarize(countriesPaste = paste(name,collapse=", ")) %>% collect()
+
+sponsor_tbl = tbl(src=con,'sponsors')
+#sponsor <- sponsor_tbl %>% select(nct_id,agency_class) %>% collect()
+#sponsor <- sponsor_tbl %>% select(nct_id,agency_class,lead_or_collaborator) %>% filter(lead_or_collaborator == 'lead')%>% collect()
+sponsor <- sponsor_tbl %>%  select(nct_id,agency_class,lead_or_collaborator)%>% collect()
+
+
+sponsor = sponsor %>% filter(nct_id %in% handCurated$nct_id) %>% group_by(nct_id) %>% mutate(funding = case_when(any(str_detect(tolower(lead_or_collaborator), pattern = paste('lead')) & str_detect(tolower(agency_class),pattern='industry')) ~ 'Industry',
+                                                                      any(str_detect(tolower(lead_or_collaborator), pattern = paste('lead')) & str_detect(tolower(agency_class),pattern='nih')) ~ 'NIH',
+                                                                      any(str_detect(tolower(lead_or_collaborator), pattern = paste('lead')) & str_detect(tolower(agency_class),pattern='u.s. fed')) ~ 'U.S. Fed',
+                                                                      any(str_detect(tolower(lead_or_collaborator), pattern = paste('collaborator')) & str_detect(tolower(agency_class),pattern='industry')) ~ 'Industry',
+                                                                      any(str_detect(tolower(lead_or_collaborator), pattern = paste('collaborator')) & str_detect(tolower(agency_class),pattern='nih')) ~ 'NIH',
+                                                                      any(str_detect(tolower(lead_or_collaborator), pattern = paste('collaborator')) & str_detect(tolower(agency_class),pattern='u.s. fed')) ~ 'U.S. Fed',
+                                                                      TRUE ~ 'Other'))
+
+sponsor = distinct(sponsor,nct_id,.keep_all=TRUE) %>% select(nct_id,funding)
+
+sponsorCombined <- sponsor_tbl %>%  select(nct_id,agency_class,lead_or_collaborator)%>% collect()
+sponsorCombined = sponsorCombined %>% filter(nct_id %in% handCurated$nct_id) %>% group_by(nct_id) %>% mutate(fundingComb = case_when(any(str_detect(tolower(lead_or_collaborator), pattern = paste('lead')) & str_detect(tolower(agency_class),pattern='industry')) ~ 'Industry',
+                                                                                                                 any(str_detect(tolower(lead_or_collaborator), pattern = paste('lead')) & str_detect(tolower(agency_class),pattern='nih')) ~ 'Public',
+                                                                                                                 any(str_detect(tolower(lead_or_collaborator), pattern = paste('lead')) & str_detect(tolower(agency_class),pattern='u.s. fed')) ~ 'Public',
+                                                                                                                 any(str_detect(tolower(lead_or_collaborator), pattern = paste('collaborator')) & str_detect(tolower(agency_class),pattern='industry')) ~ 'Industry',
+                                                                                                                 any(str_detect(tolower(lead_or_collaborator), pattern = paste('collaborator')) & str_detect(tolower(agency_class),pattern='nih')) ~ 'Public',
+                                                                                                                 any(str_detect(tolower(lead_or_collaborator), pattern = paste('collaborator')) & str_detect(tolower(agency_class),pattern='u.s. fed')) ~ 'Public',
+                                                                                                                 TRUE ~ 'Other'))
+
+sponsorCombined = distinct(sponsorCombined,nct_id,.keep_all=TRUE) %>% select(nct_id,fundingComb)
+
+
+calculatedValues_tbl = tbl(src=con,'calculated_values')
+calculatedValues <- calculatedValues_tbl  %>% select(nct_id,were_results_reported) %>% collect()
+calculatedValues <- calculatedValues %>% filter(nct_id %in% handCurated$nct_id)
+
+#baselineMeasurements_tbl = tbl(src=con,'baseline_measurements')
+#baselineMeasurements <- baselineMeasurements_tbl %>% select(nct_id,category) %>% collect()
+
+interventions_tbl = tbl(src=con,'interventions')
+interventions = interventions_tbl %>%  select(nct_id,intervention_type) %>% collect()
+interventions <- interventions %>% filter(nct_id %in% handCurated$nct_id) %>% group_by(nct_id) %>% summarize(intervention_comb = paste(intervention_type,collapse=", "))
+
+interventionTrial = interventions %>% mutate(interventionType = case_when(str_detect(tolower(intervention_comb), pattern = paste('procedure')) ~ 'Procedure',
+                                                                          str_detect(tolower(intervention_comb), pattern = paste('behavioral')) ~ 'Behavioral',
+                                                                          str_detect(tolower(intervention_comb), pattern = paste('device')) ~ 'Device',
+                                                                          str_detect(tolower(intervention_comb), pattern = paste('biological')) ~ 'Biological',
+                                                                          str_detect(tolower(intervention_comb), pattern = paste('drug')) ~ 'Drug',
+                                                                          TRUE ~ 'other'))
+
+interventionTrialCombined = interventions %>% mutate(interventionTypeCombined = case_when(str_detect(tolower(intervention_comb), pattern = paste('procedure')) ~ 'Procedure',
+                                                                          str_detect(tolower(intervention_comb), pattern = paste('behavioral')) ~ 'Behavioral',
+                                                                          str_detect(tolower(intervention_comb), pattern = paste('device')) ~ 'Device',
+                                                                          str_detect(tolower(intervention_comb), pattern = paste('biological')) ~ 'Pharmaceutical',
+                                                                          str_detect(tolower(intervention_comb), pattern = paste('drug')) ~ 'Pharmaceutical',
+                                                                          TRUE ~ 'other'))
+
+#interventions_nest <- interventions %>% group_by(nct_id) %>% nest() 
+#inverventions_nest <- interventions_nest %>% mutate(Intervention = case_when(str_detect(tolower(data), pattern = paste('procedure')) ~ 'interrv',
+#                                                               TRUE ~ 'drug'))
+
+facilities_tbl = tbl(src=con,'facilities')
+facilities <- facilities_tbl  %>% select(nct_id,status,name) %>%collect()
+facilities_tabulated <- facilities %>% filter(nct_id %in% handCurated$nct_id) %>% group_by(nct_id) %>% tally()
+facilities_tabulated <- rename(facilities_tabulated,facilitiesCount = n)
+facilities_tabulated <- facilities_tabulated %>% mutate(multisite = ifelse(facilitiesCount>1,TRUE,FALSE))
+
+study_ref_tbl = tbl(src=con,'study_references')
+# study_ref <- study_ref_tbl %>% select(nct_id,pmid,reference_type,citation)%>% filter(reference_type=="results_reference") %>% collect()
+study_ref <- study_ref_tbl %>% select(nct_id,pmid,reference_type,citation) %>% collect()
+study_ref_tabulated <- study_ref %>% filter(nct_id %in% handCurated$nct_id) %>% group_by(nct_id) %>% tally()
+study_ref_tabulated <- rename(study_ref_tabulated,pubCount = n)
+
+#study_tbl_description = tbl(src=con, 'detailed_descriptions')
+#filtered_table = study_tbl_description %>% select(nct_id,description) %>% collect()
+#filtered_table <- filtered_table %>% filter(nct_id %in% handCurated$nct_id)
+
+# this is a join that includes all categories, but only ones that match the description 
+joinedTable <- join_all(list(filter_dates,facilities_tabulated,sponsor,sponsorCombined,locations,interventionTrial,interventionTrialCombined,calculatedValues),by='nct_id',type="full")
+joinedTable <- joinedTable %>% filter(nct_id %in% locations$nct_id)
+#joinedTable <- inner_join(filtered_table,joinedTable,by='nct_id')
+
+# get rid of any NA start dates
+joinedTable <- joinedTable[complete.cases(joinedTable$start_date),]
+
+
+# this adds pub counts, and NAs for those that dont have pubs
+joinedTable <- left_join(joinedTable,study_ref_tabulated,by='nct_id')
+
+#joinedTable_tabulated <- joinedTable %>% group_by(nct_id) %>% tally()
+#joinedTable <- joinedTable %>% mutate(diverseGroup = as.numeric(str_detect(tolower(description), pattern = paste(stringBlack, collapse = "|"))))
+joinedTable <- joinedTable %>% mutate(pubCountBool = case_when(!is.na(pubCount) ~ 'TRUE',
+                                                               TRUE ~ 'FALSE'))
+
+handCuratedShrunk <- handCurated %>% filter(nct_id %in% joinedTable$nct_id) %>% collect()
+joinedTable <- inner_join(joinedTable,handCuratedShrunk,by='nct_id')
+
+
+joinedTable <- joinedTable %>% mutate(diverseGroup = case_when(str_detect(tolower(diverse), pattern = paste('non-race specific')) ~ 'Non-race specific',
+                                                               TRUE ~ 'Race-specific'))
+
+joinedTable <- joinedTable %>% mutate(yearStart=year(joinedTable$start_date))
+
+# count number of missing columns
+joinedTable<- joinedTable %>% mutate(numMissing = rowSums(is.na(.)))
+
+# double check that no trials are double counted
+doubleCounts <- joinedTable %>% group_by(nct_id) %>% summarise(count=n())
+unique(doubleCounts$count)
+
+# add in drug vs. non-drug 
+
+joinedTable <- joinedTable %>% mutate(interventionDrugNonDrug = case_when(str_detect(tolower(intervention_comb), pattern = paste('drug')) ~ 'Drug Intervention',
+                                                                   TRUE ~ 'Non-Drug Intervention'))
+
+# add in industry vs. non industry
+
+joinedTable <- joinedTable %>% mutate(industryNonIndustry = case_when(str_detect(tolower(funding), pattern = paste('industry')) ~ 'Industry Sponsor',
+                                                                          TRUE ~ 'Non-Industry Sponsor'))
+
+# rename race-specific 
+joinedTable <- joinedTable %>% mutate(raceSpecific = case_when(str_detect(diverseGroup, pattern = paste('Diverse')) ~ 'Race-Specific',
+                                                               TRUE ~ 'Non-Race Specific'))
 
 # group by year and diversity group 
 joinedTableCount <- joinedTable %>% group_by(yearStart,diverse) %>% tally()
@@ -79,22 +219,19 @@ summary(lmRatio)
 
 ########################
 if (saveData){
-  saveRDS(joinedTable, file = "htnRdata_12_9_2019.rds")
-  write.csv(joinedTable,'htnTableTotal_12_9_2019.csv')
-  write.csv(joinedTableNoDescrip,'htnTableTotalNoDescrip_12_9_2019.csv')
-  write.csv(joinedTableDiverseDiscontinued,'htnTableDiscDiverse_12_9_2019.csv')
-  write.csv(joinedTableSummarizeInterv,'htnTableInterv_12_9_2019.csv')
-  write.csv(joinedTableSummarizeType,'htnTableType_12_9_2019.csv')
-  write.csv(joinedTableSummarizePhase,'htnTablePhase_12_9_2019.csv')
-  write.csv(joinedTableSummarizeAgency,'htnTableAgency_12_9_2019.csv')
-  write.csv(joinedTableSummarizeReported,'htnTableReported_12_9_2019.csv')
-  write.csv(joinedTableSummarizeSite,'htnTableSite_12_9_2019.csv')
-  write.csv(joinedTableSummarizeStatus,'htnTableStatus_12_9_2019.csv')
-  write.csv(joinedTableSummarizeOverallStatus,'htnTableOverallStatus_12_9_2019.csv')
-  write.csv(joinedTableSummarizePubCount,'htnTablePubCount_12_9_2019.csv')
-  
+  saveRDS(joinedTable, file = "htnRdata_2_14_2020.rds")
+  write.csv(joinedTable,'htnTableTotal_2_14_2020.csv')
+  write.csv(joinedTableDiverseDiscontinued,'htnTableDiscDiverse_2_14_2020.csv')
+  write.csv(joinedTableSummarizeInterv,'htnTableInterv_2_14_2020.csv')
+  write.csv(joinedTableSummarizeType,'htnTableType_2_14_2020.csv')
+  write.csv(joinedTableSummarizePhase,'htnTablePhase_2_14_2020.csv')
+  write.csv(joinedTableSummarizeAgency,'htnTableAgency_2_14_2020.csv')
+  write.csv(joinedTableSummarizeReported,'htnTableReported_2_14_2020.csv')
+  write.csv(joinedTableSummarizeSite,'htnTableSite_2_14_2020.csv')
+  write.csv(joinedTableSummarizeStatus,'htnTableStatus_2_14_2020.csv')
+  write.csv(joinedTableSummarizeOverallStatus,'htnTableOverallStatus_2_14_2020.cs')
+  write.csv(joinedTableSummarizePubCount,'htnTablePubCount_2_14_2020.csv')
 }
-
 
 #########################################
 
