@@ -24,12 +24,10 @@ countriesList = c("United States")
 
 #########################################
 # boolean options for saving
-savePlot = FALSE
-loadExcel = TRUE
+savePlot = TRUE
 saveData = TRUE
 
 handCurated <- read.csv(file="C:/Users/david/SharedCode/aact/NCT_Race_All.csv", header=TRUE, sep=",",na.strings=c(""))
-
 
 names(handCurated)[1] <- "nct_id"
 names(handCurated)[2] <- "diverse"
@@ -40,7 +38,8 @@ con <- dbConnect(drv, dbname="aact",host="aact-db.ctti-clinicaltrials.org", port
 
 # begin loading, filtering, selecting tables
 study_tbl = tbl(src=con,'studies')
-filter_dates <- study_tbl %>% select(official_title,start_date,nct_id,phase,last_known_status,study_type,enrollment,overall_status) %>% filter(start_date >= startDate && start_date <= startDateEnd && study_type == 'Interventional')  %>% collect()
+#filter_dates <- study_tbl %>% select(official_title,start_date,nct_id,phase,last_known_status,study_type,enrollment,overall_status) %>% filter(start_date >= startDate && start_date <= startDateEnd && study_type == 'Interventional')  %>% collect()
+filter_dates <- study_tbl %>% select(official_title,start_date,nct_id,phase,last_known_status,study_type,enrollment,overall_status) %>% collect()
 filter_dates <- filter_dates%>% filter(nct_id %in% handCurated$nct_id) %>% mutate(phase = replace(phase, phase == "N/A", "Not Applicable"))
 
 location_tbl = tbl(src=con,'countries')
@@ -49,8 +48,11 @@ location_tbl = tbl(src=con,'countries')
 locations = location_tbl %>% select(nct_id,name)  %>% collect()
 locations <- locations %>% filter(nct_id %in% handCurated$nct_id) %>%  group_by(nct_id) %>% summarize(countriesPaste = paste(name,collapse=", ")) %>% filter (countriesPaste == countriesList) %>% collect()
 
-#locationsTotal = location_tbl %>% select(nct_id,name) %>%  collect()
-#locationsTotal = locationsTotal %>% filter(nct_id %in% handCurated$nct_id) %>% group_by(nct_id) %>% summarize(countriesPaste = paste(name,collapse=", ")) %>% collect()
+locationsTotal = location_tbl %>% select(nct_id,name) %>%  collect()
+locationsTotal = locationsTotal %>% filter(nct_id %in% handCurated$nct_id) %>% group_by(nct_id) %>% summarize(countriesPaste = paste(name,collapse=", ")) %>% collect()
+
+locationCheck <- full_join(locationsTotal,handCurated,by='nct_id')
+
 
 sponsor_tbl = tbl(src=con,'sponsors')
 #sponsor <- sponsor_tbl %>% select(nct_id,agency_class) %>% collect()
@@ -116,9 +118,9 @@ facilities_tabulated <- rename(facilities_tabulated,facilitiesCount = n)
 facilities_tabulated <- facilities_tabulated %>% mutate(multisite = ifelse(facilitiesCount>1,TRUE,FALSE))
 
 study_ref_tbl = tbl(src=con,'study_references')
-# study_ref <- study_ref_tbl %>% select(nct_id,pmid,reference_type,citation)%>% filter(reference_type=="results_reference") %>% collect()
 study_ref <- study_ref_tbl %>% select(nct_id,pmid,reference_type,citation) %>% collect()
-study_ref_tabulated <- study_ref %>% filter(nct_id %in% handCurated$nct_id) %>% filter(reference_type == 'results_reference') %>% group_by(nct_id) %>% tally()
+#study_ref_tabulated <- study_ref %>% filter(nct_id %in% handCurated$nct_id) %>% filter(reference_type == 'results_reference') %>% group_by(nct_id) %>% tally()
+study_ref_tabulated <- study_ref %>% filter(nct_id %in% handCurated$nct_id) %>% group_by(nct_id) %>% tally()
 study_ref_tabulated <- rename(study_ref_tabulated,pubCount = n)
 
 #study_tbl_description = tbl(src=con, 'detailed_descriptions')
@@ -132,7 +134,6 @@ joinedTable <- joinedTable %>% filter(nct_id %in% locations$nct_id)
 
 # get rid of any NA start dates
 joinedTable <- joinedTable[complete.cases(joinedTable$start_date),]
-
 
 # this adds pub counts, and NAs for those that dont have pubs
 joinedTable <- left_join(joinedTable,study_ref_tabulated,by='nct_id')
