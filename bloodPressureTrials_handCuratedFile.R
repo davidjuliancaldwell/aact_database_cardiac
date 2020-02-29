@@ -1,8 +1,4 @@
 #########################################
-# set working directory for your machine
-setwd("C:/Users/david/SharedCode/aact")
-
-#########################################
 # load libraries
 library(tidyr)
 library(RPostgreSQL)
@@ -14,6 +10,20 @@ library(ggplot2)
 library(ggsci)
 library(gridExtra)
 library(cowplot)
+library(here)
+#########################################
+# boolean values for saving, username and password for accessing AACT database
+
+savePlot = FALSE
+saveData = FALSE
+userAACT="ENTER_USER_NAME"
+passwordAACT="ENTER_PASSWORD"
+
+#########################################
+# set up data directories, load in hand curated file
+rootDir = here()
+dataFile = here("NCT_Race_All.csv")
+handCurated <- read.csv(file=dataFile, header=TRUE, sep=",",na.strings=c(""))
 
 #########################################
 # create search parameters
@@ -22,27 +32,19 @@ countriesList = c("United States")
 `%nin%` = Negate(`%in%`)
 
 #########################################
-# boolean options for saving
-savePlot = TRUE
-saveData = TRUE
-
-handCurated <- read.csv(file="C:/Users/david/SharedCode/aact/NCT_Race_All.csv", header=TRUE, sep=",",na.strings=c(""))
 
 names(handCurated)[1] <- "nct_id"
 names(handCurated)[2] <- "diverse"
 
 # connect to database
 drv <- dbDriver('PostgreSQL')
-con <- dbConnect(drv, dbname="aact",host="aact-db.ctti-clinicaltrials.org", port=5432, user="djcald", password="DD968radford")
+con <- dbConnect(drv, dbname="aact",host="aact-db.ctti-clinicaltrials.org",user=userAACT,password=passwordAACT,port=5432)
 
 # begin loading, filtering, selecting tables
 study_tbl = tbl(src=con,'studies')
-#filter_dates <- study_tbl %>% select(official_title,start_date,start_month_year,nct_id,phase,last_known_status,study_type,enrollment,overall_status) %>% filter(start_date >= startDate & start_date <= startDateEnd & study_type == 'Interventional')  %>% collect()
 filter_dates <- study_tbl %>% select(official_title,study_first_posted_date,verification_date,start_date,start_month_year,nct_id,phase,last_known_status,study_type,enrollment,overall_status) %>% filter(start_date >= startDate & study_type == 'Interventional')  %>% collect()
 filter_dates <- filter_dates %>% filter(nct_id %in% handCurated$nct_id)
-#filter_dates <- study_tbl %>% select(official_title,start_date,start_month_year,nct_id,phase,last_known_status,study_type,enrollment,overall_status) %>% collect()
 filter_dates <- filter_dates%>% mutate(phase = replace(phase, phase == "N/A", "Not Applicable"))
-
 
 location_tbl = tbl(src=con,'countries')
 
@@ -57,8 +59,6 @@ locationCheck <- full_join(locationsTotal,handCurated,by='nct_id')
 
 
 sponsor_tbl = tbl(src=con,'sponsors')
-#sponsor <- sponsor_tbl %>% select(nct_id,agency_class) %>% collect()
-#sponsor <- sponsor_tbl %>% select(nct_id,agency_class,lead_or_collaborator) %>% filter(lead_or_collaborator == 'lead')%>% collect()
 sponsor <- sponsor_tbl %>%  select(nct_id,agency_class,lead_or_collaborator)%>% collect()
 
 
@@ -83,13 +83,9 @@ sponsorCombined = sponsorCombined %>% filter(nct_id %in% handCurated$nct_id) %>%
 
 sponsorCombined = distinct(sponsorCombined,nct_id,.keep_all=TRUE) %>% select(nct_id,fundingComb)
 
-
 calculatedValues_tbl = tbl(src=con,'calculated_values')
 calculatedValues <- calculatedValues_tbl  %>% select(nct_id,were_results_reported) %>% collect()
 calculatedValues <- calculatedValues %>% filter(nct_id %in% handCurated$nct_id)
-
-#baselineMeasurements_tbl = tbl(src=con,'baseline_measurements')
-#baselineMeasurements <- baselineMeasurements_tbl %>% select(nct_id,category) %>% collect()
 
 interventions_tbl = tbl(src=con,'interventions')
 interventions = interventions_tbl %>%  select(nct_id,intervention_type) %>% collect()
@@ -109,10 +105,6 @@ interventionTrialCombined = interventions %>% mutate(interventionTypeCombined = 
                                                                           str_detect(tolower(intervention_comb), pattern = paste('drug')) ~ 'Pharmaceutical',
                                                                           TRUE ~ 'other'))
 
-#interventions_nest <- interventions %>% group_by(nct_id) %>% nest() 
-#inverventions_nest <- interventions_nest %>% mutate(Intervention = case_when(str_detect(tolower(data), pattern = paste('procedure')) ~ 'interrv',
-#                                                               TRUE ~ 'drug'))
-
 facilities_tbl = tbl(src=con,'facilities')
 facilities <- facilities_tbl  %>% select(nct_id,status,name) %>%collect()
 facilities_tabulated <- facilities %>% filter(nct_id %in% handCurated$nct_id) %>% group_by(nct_id) %>% tally()
@@ -121,25 +113,19 @@ facilities_tabulated <- facilities_tabulated %>% mutate(multisite = ifelse(facil
 
 study_ref_tbl = tbl(src=con,'study_references')
 study_ref <- study_ref_tbl %>% select(nct_id,pmid,reference_type,citation) %>% collect()
-#study_ref_tabulated <- study_ref %>% filter(nct_id %in% handCurated$nct_id) %>% filter(reference_type == 'results_reference') %>% group_by(nct_id) %>% tally()
 study_ref_tabulated <- study_ref %>% filter(nct_id %in% handCurated$nct_id) %>% group_by(nct_id) %>% tally()
 study_ref_tabulated <- rename(study_ref_tabulated,pubCount = n)
-
-#study_tbl_description = tbl(src=con, 'detailed_descriptions')
-#filtered_table = study_tbl_description %>% select(nct_id,description) %>% collect()
-#filtered_table <- filtered_table %>% filter(nct_id %in% handCurated$nct_id)
 
 # this is a join that includes all categories, but only ones that match the description 
 joinedTable <- join_all(list(filter_dates,facilities_tabulated,sponsor,sponsorCombined,interventionTrial,interventionTrialCombined,calculatedValues),by='nct_id',type="full")
 joinedTable <- joinedTable %>% filter((nct_id %in% locations$nct_id) & (nct_id %in% filter_dates$nct_id))
+
 # get rid of any NA start dates
 #joinedTable <- joinedTable[complete.cases(joinedTable$start_date),]
 
 # this adds pub counts, and NAs for those that dont have pubs
 joinedTable <- left_join(joinedTable,study_ref_tabulated,by='nct_id')
 
-#joinedTable_tabulated <- joinedTable %>% group_by(nct_id) %>% tally()
-#joinedTable <- joinedTable %>% mutate(diverseGroup = as.numeric(str_detect(tolower(description), pattern = paste(stringBlack, collapse = "|"))))
 joinedTable <- joinedTable %>% mutate(pubCountBool = case_when(!is.na(pubCount) ~ 'TRUE',
                                                                TRUE ~ 'FALSE'))
 
@@ -160,12 +146,10 @@ doubleCounts <- joinedTable %>% group_by(nct_id) %>% summarise(count=n())
 unique(doubleCounts$count)
 
 # add in drug vs. non-drug 
-
 joinedTable <- joinedTable %>% mutate(interventionDrugNonDrug = case_when(str_detect(tolower(intervention_comb), pattern = paste('drug')) ~ 'Drug Intervention',
                                                                    TRUE ~ 'Non-Drug Intervention'))
 
 # add in industry vs. non industry
-
 joinedTable <- joinedTable %>% mutate(industryNonIndustry = case_when(str_detect(tolower(funding), pattern = paste('industry')) ~ 'Industry Sponsor',
                                                                           TRUE ~ 'Non-Industry Sponsor'))
 
@@ -241,7 +225,6 @@ pInd<-ggplot(joinedTableCount, aes(x=yearStart,y=yearlyCount, group=diverse, col
   geom_line()+
   geom_point() +
   labs(title="Number of Hypertension Clinical Trials \nRegistered by Race-Group Enrolled, by Year",x = "Year Registered",y="Number of Trials") +
-  # scale_y_continuous(breaks=seq(0,250,10)) +
   ylim(0,max(joinedTableCount$yearlyCount)+10) +
   scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) + 
   scale_color_jama() +
@@ -256,7 +239,6 @@ pComb<-ggplot(joinedTableCountGroup, aes(x=yearStart,y=yearlyCount, group=divers
   geom_line()+
   geom_point() +
   labs(title="Number of Hypertension Clinical Trials \nRegistered by Race-Specific Status, by Year",x = "Year Registered",y="Number of Trials",color = 'Race-Specific Enrollment ') +
-  #scale_y_continuous(breaks=seq(0,250,10)) +
   ylim(0,max(joinedTableCount$yearlyCount)+10) +
   scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) +
   scale_color_jama()
@@ -287,15 +269,6 @@ print(pRatioTotal)
 if (savePlot){
   ggsave("trialsByYearRatioTotal_2_14_2020.png", units="in", width=5, height=4, dpi=600)
 }
-
-#grid.arrange(pComb,pRatio,ncol=2)
-#pCombGrid <- arrangeGrob(pComb,pRatio,ncol=2)
-#pComb <- plot_grid(pInd,pRatio,ncol=2,rel_widths = c(5/9,4/9))
-
-#print(pCombGrid)
-#if (savePlot){
-#  ggsave(file="trialsByYearGroupGrid_2_14_2020.png",pComb, units="in", width=10, height=4, dpi=600)
-#}
 
 prow <- plot_grid(pComb + theme(legend.position = "none"),
                   NULL,
@@ -331,13 +304,11 @@ if (savePlot){
 
 grid.arrange(pComb,pRatioTotal,ncol=2)
 pCombTotal <- arrangeGrob(pInd,pRatioTotal,ncol=2)
-#pComb <- plot_grid(pInd,pRatio,ncol=2,rel_widths = c(5/9,4/9))
 
 #print(pComb)
 if (savePlot){
   ggsave(file="trialsByYearGroupGridTotal_2_14_2020.png",pCombTotal, units="in", width=10, height=4, dpi=600)
 }
-
 
 pHist<-ggplot(joinedTable, aes(x=numMissing)) +
   geom_histogram(binwidth=1,color="black", fill="white") +
@@ -406,14 +377,8 @@ if (savePlot){
 interventionInterest <- c("Behavioral","Pharmaceutical")
 fundingInterest <- c("Public","Industry")
 
-#joinedTableCountSelectInterv <- joinedTable %>% filter(interventionType %in% interventionInterest) %>% group_by(yearStart,diverse,interventionType) %>% tally()
-#joinedTableCountSelectInterv <- rename(joinedTableCountSelectInterv,yearlyCount = n)
-
 joinedTableCountGroupSelectInterv <- joinedTable %>% filter(interventionTypeCombined %in% interventionInterest) %>% group_by(yearStart,diverseGroup,interventionTypeCombined) %>% count()
 joinedTableCountGroupSelectInterv <- rename(joinedTableCountGroupSelectInterv,yearlyCount = n)
-
-#joinedTableCountSelectFund <- joinedTable %>% filter(fundingComb %in% fundingInterest) %>% group_by(yearStart,diverse,fundingComb) %>% tally()
-#joinedTableCountSelectFund <- rename(joinedTableCountSelectFund,yearlyCount = n)
 
 joinedTableCountGroupSelectFund <- joinedTable %>% filter(fundingComb %in% fundingInterest) %>% group_by(yearStart,diverseGroup,fundingComb) %>% count()
 joinedTableCountGroupSelectFund <- rename(joinedTableCountGroupSelectFund,yearlyCount = n)
@@ -425,35 +390,24 @@ pGroupSelectInt<-ggplot(joinedTableCountGroupSelectInterv, aes(x=yearStart,y=yea
   geom_point() +
   facet_wrap(~ interventionTypeCombined) +
   labs(title='Panel A. Intervention Type',x="",y="") +
-  # scale_y_continuous(breaks=seq(0,250,10)) +
   ylim(0,ymax+10) +
   scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) + 
   scale_color_jama() +
   labs(color = 'Race-Specific Enrollment ')
 
 print(pGroupSelectInt)
-#if (savePlot){
-#  ggsave("trialsByYearIntervGroup_2_14_2020.png", units="in", width=5, height=4, dpi=600)
-#}
 
 pGroupSelectFund<-ggplot(joinedTableCountGroupSelectFund, aes(x=yearStart,y=yearlyCount, group=diverseGroup, color=diverseGroup)) +
   geom_line()+
   geom_point() +
   facet_wrap(~ fundingComb) +
   labs(title='Panel B. Funding Type',x = "Year Registered",y="Number of Trials") +
-  # scale_y_continuous(breaks=seq(0,250,10)) +
   ylim(0,ymax+10) +
   scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) + 
   scale_color_jama() +
   labs(color = 'Race-Specific Enrollment ')
 
 print(pGroupSelectFund)
-#if (savePlot){
-#  ggsave("trialsByYearFundGroup_2_14_2020.png", units="in", width=5, height=4, dpi=600)
-#}
-
-#grid.arrange(pGroupSelectInt,pGroupSelectFund,ncol=1)
-#pGroupFundInt <- arrangeGrob(pFacetDrug,pFacetFundNoText,ncol=1)
 
 prowFundInt <- plot_grid(pGroupSelectInt + theme(legend.position = "none"),
                      pGroupSelectFund + theme(legend.position = "none"),
@@ -479,14 +433,8 @@ if (savePlot){
 interventionInterest <- c("Behavioral","Pharmaceutical")
 fundingInterest <- c("Public","Industry","Other")
 
-#joinedTableCountSelectInterv <- joinedTable %>% filter(interventionType %in% interventionInterest) %>% group_by(yearStart,diverse,interventionType) %>% tally()
-#joinedTableCountSelectInterv <- rename(joinedTableCountSelectInterv,yearlyCount = n)
-
 joinedTableCountGroupSelectInterv <- joinedTable %>% filter(interventionTypeCombined %in% interventionInterest) %>% group_by(yearStart,diverseGroup,interventionTypeCombined) %>% count()
 joinedTableCountGroupSelectInterv <- rename(joinedTableCountGroupSelectInterv,yearlyCount = n)
-
-#joinedTableCountSelectFund <- joinedTable %>% filter(fundingComb %in% fundingInterest) %>% group_by(yearStart,diverse,fundingComb) %>% tally()
-#joinedTableCountSelectFund <- rename(joinedTableCountSelectFund,yearlyCount = n)
 
 joinedTableCountGroupSelectFund <- joinedTable %>% filter(fundingComb %in% fundingInterest) %>% group_by(yearStart,diverseGroup,fundingComb) %>% count()
 joinedTableCountGroupSelectFund <- rename(joinedTableCountGroupSelectFund,yearlyCount = n)
@@ -496,48 +444,29 @@ pGroupSelectInt<-ggplot(joinedTableCountGroupSelectInterv, aes(x=yearStart,y=yea
   geom_point() +
   facet_wrap(~ interventionTypeCombined) +
   labs(title='Panel A. Intervention Type',x="",y="") +
-  # scale_y_continuous(breaks=seq(0,250,10)) +
   ylim(0,ymax+10) +
   scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) + 
   scale_color_jama() +
   labs(color = 'Race-Specific Enrollment ')
 
 print(pGroupSelectInt)
-#if (savePlot){
-#  ggsave("trialsByYearIntervGroup_2_14_2020.png", units="in", width=5, height=4, dpi=600)
-#}
 
 pGroupSelectFund<-ggplot(joinedTableCountGroupSelectFund, aes(x=yearStart,y=yearlyCount, group=diverseGroup, color=diverseGroup)) +
   geom_line()+
   geom_point() +
   facet_wrap(~ fundingComb) +
   labs(title='Panel B. Funding Type',x = "Year Registered",y="Number of Trials") +
-  # scale_y_continuous(breaks=seq(0,250,10)) +
   ylim(0,ymax+10) +
   scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) + 
   scale_color_jama() +
   labs(color = 'Race-Specific Enrollment ')
 
 print(pGroupSelectFund)
-#if (savePlot){
-#  ggsave("trialsByYearFundGroup_2_14_2020.png", units="in", width=5, height=4, dpi=600)
-#}
-
-#grid.arrange(pGroupSelectInt,pGroupSelectFund,ncol=1)
-#pGroupFundInt <- arrangeGrob(pFacetDrug,pFacetFundNoText,ncol=1)
-
-#pRowTop2 <- plot_grid(pGroupSelectInt + theme(legend.position = "none"),
-#                      NULL,
-#                      ncol=2,
-#                      rel_widths = c(4,1),
-#                      rel_heights = c(1,1))
 
 prowFundInt <- plot_grid(pGroupSelectInt + theme(legend.position = "right"),
                          pGroupSelectFund + theme(legend.position = "none"),
                          nrow=2)
 
-#legend <- get_legend(pGroupSelectInt + theme(legend.box.margin=margin(0,0,0,12)))
-#pTotalFundInt <- prowFundInt + draw_grob(legend,1.7/4.5,0,1/3.3,0.12)
 print(prowFundInt)
 
 
@@ -553,14 +482,12 @@ grid.arrange(pGroupSelectInt,pGroupSelectFund + theme(legend.position = "none"),
              layout_matrix = lay
 )
 
-
 lay <- rbind(c(1,NA),c(2))
 pTest <- arrangeGrob(pGroupSelectInt,pGroupSelectFund + theme(legend.position = "none"),
                      ncol=2,
                      widths = c(8,1),
                      layout_matrix = lay
 )
-
 
 if (savePlot){
   ggsave(file="trialsDrugIndustryGridHorz3wayGRIDARRANGE_2_14_2019.png",pTest, units="in", width=10, height=8, dpi=600)
