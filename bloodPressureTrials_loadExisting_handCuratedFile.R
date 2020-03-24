@@ -190,7 +190,10 @@ pTotalInd <- prowInd + draw_grob(legend,1.4/4.5,0,.4/3.3,0.75)
 print(pTotalInd)
 
 if (savePlot){
-  save_plot('trialsByYearGroupGridInd_2_14_2020.png', pTotalInd, ncol = 2, nrow = 1, base_height = 4, base_width=6,dpi=600)
+  save_plot('trialsByYearGroupGridInd_2_14_2020_300.png', pTotalInd, ncol = 2, nrow = 1, base_height = 4, base_width=6,dpi=300)
+  save_plot('trialsByYearGroupGridInd_2_14_2020_300.tiff', pTotalInd, ncol = 2, nrow = 1, base_height = 4, base_width=6,dpi=300)
+  save_plot('trialsByYearGroupGridInd_2_14_2020_300.jpeg', pTotalInd, ncol = 2, nrow = 1, base_height = 4, base_width=6,dpi=300)
+  
 }
 
 grid.arrange(pComb,pRatioTotal,ncol=2)
@@ -427,5 +430,7 @@ pTest <- arrangeGrob(pGroupSelectInt,pGroupSelectFund + theme(legend.position = 
 
 
 if (savePlot){
-  ggsave(file="trialsDrugIndustryGridHorz3wayGRIDARRANGE_2_14_2019.png",pTest, units="in", width=10, height=8, dpi=600)
+  ggsave(file="trialsDrugIndustryGridHorz3wayGRIDARRANGE_2_14_2019_300.png",pTest, units="in", width=10, height=8, dpi=300)
+  ggsave(file="trialsDrugIndustryGridHorz3wayGRIDARRANGE_2_14_2019_300.tiff",pTest, units="in", width=10, height=8, dpi=300)
+  ggsave(file="trialsDrugIndustryGridHorz3wayGRIDARRANGE_2_14_2019_300.jpeg",pTest, units="in", width=10, height=8, dpi=300)
 }

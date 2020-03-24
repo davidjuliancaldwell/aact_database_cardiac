@@ -490,5 +490,7 @@ pTest <- arrangeGrob(pGroupSelectInt,pGroupSelectFund + theme(legend.position = 
 )
 
 if (savePlot){
-  ggsave(file="trialsDrugIndustryGridHorz3wayGRIDARRANGE_2_14_2019.png",pTest, units="in", width=10, height=8, dpi=600)
+  ggsave(file="trialsDrugIndustryGridHorz3wayGRIDARRANGE_2_14_2019_300.png",pTest, units="in", width=10, height=8, dpi=300)
+  ggsave(file="trialsDrugIndustryGridHorz3wayGRIDARRANGE_2_14_2019_300.tiff",pTest, units="in", width=10, height=8, dpi=300)
+  ggsave(file="trialsDrugIndustryGridHorz3wayGRIDARRANGE_2_14_2019_300.jpeg",pTest, units="in", width=10, height=8, dpi=300)
 }
