@@ -18,7 +18,6 @@ library(cowplot)
 #########################################
 # create search parameters
 startDate = as.Date("2009-01-01")
-startDateEnd = as.Date("2018-12-31")
 countriesList = c("United States")
 `%nin%` = Negate(`%in%`)
 
