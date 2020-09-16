@@ -16,8 +16,8 @@ library(here)
 
 savePlot = TRUE
 saveData = TRUE
-userAACT="djcald"
-passwordAACT="DD968radford"
+userAACT=USERNAME
+passwordAACT=PASSWORD
 
 #########################################
 # set up data directories, load in hand curated file
