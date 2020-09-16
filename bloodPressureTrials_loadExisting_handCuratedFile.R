@@ -25,11 +25,10 @@ countriesList = c("United States")
 # boolean options for saving
 savePlot = FALSE
 
-handCurated <- read.csv(file="C:/Users/david/SharedCode/aact/NCT_Race_All.csv", header=TRUE, sep=",",na.strings=c(""))
-joinedTable <- readRDS(file="C:/Users/david/SharedCode/aact/htnRdata_2_14_2020.rds")
-  
-names(handCurated)[1] <- "nct_id"
-names(handCurated)[2] <- "diverse"
+handCurated <- read.csv(file="C:/Users/david/SharedCode/aact/htn_race_final.csv", header=TRUE, sep=",",na.strings=c(""))
+joinedTable <- readRDS(file="C:/Users/david/SharedCode/aact/htnRdata_9_16_2020.rds")
+
+handCurated <- handCurated %>% select(nct_id,diverse)
 
 # group by year and diversity group 
 joinedTableCount <- joinedTable %>% group_by(yearStart,diverse) %>% tally()
@@ -78,19 +77,19 @@ summary(lmRatio)
 
 ########################
 if (saveData){
-  saveRDS(joinedTable, file = "htnRdata_12_9_2019.rds")
-  write.csv(joinedTable,'htnTableTotal_12_9_2019.csv')
-  write.csv(joinedTableNoDescrip,'htnTableTotalNoDescrip_12_9_2019.csv')
-  write.csv(joinedTableDiverseDiscontinued,'htnTableDiscDiverse_12_9_2019.csv')
-  write.csv(joinedTableSummarizeInterv,'htnTableInterv_12_9_2019.csv')
-  write.csv(joinedTableSummarizeType,'htnTableType_12_9_2019.csv')
-  write.csv(joinedTableSummarizePhase,'htnTablePhase_12_9_2019.csv')
-  write.csv(joinedTableSummarizeAgency,'htnTableAgency_12_9_2019.csv')
-  write.csv(joinedTableSummarizeReported,'htnTableReported_12_9_2019.csv')
-  write.csv(joinedTableSummarizeSite,'htnTableSite_12_9_2019.csv')
-  write.csv(joinedTableSummarizeStatus,'htnTableStatus_12_9_2019.csv')
-  write.csv(joinedTableSummarizeOverallStatus,'htnTableOverallStatus_12_9_2019.csv')
-  write.csv(joinedTableSummarizePubCount,'htnTablePubCount_12_9_2019.csv')
+  saveRDS(joinedTable, file = "htnRdata_9_16_2020.rds")
+  write.csv(joinedTable,'htnTableTotal_9_16_2020.csv')
+  write.csv(joinedTableNoDescrip,'htnTableTotalNoDescrip_9_16_2020.csv')
+  write.csv(joinedTableDiverseDiscontinued,'htnTableDiscDiverse_9_16_2020.csv')
+  write.csv(joinedTableSummarizeInterv,'htnTableInterv_9_16_2020.csv')
+  write.csv(joinedTableSummarizeType,'htnTableType_9_16_2020.csv')
+  write.csv(joinedTableSummarizePhase,'htnTablePhase_9_16_2020.csv')
+  write.csv(joinedTableSummarizeAgency,'htnTableAgency_9_16_2020.csv')
+  write.csv(joinedTableSummarizeReported,'htnTableReported_9_16_2020.csv')
+  write.csv(joinedTableSummarizeSite,'htnTableSite_9_16_2020.csv')
+  write.csv(joinedTableSummarizeStatus,'htnTableStatus_9_16_2020.csv')
+  write.csv(joinedTableSummarizeOverallStatus,'htnTableOverallStatus_9_16_2020.csv')
+  write.csv(joinedTableSummarizePubCount,'htnTablePubCount_9_16_2020.csv')
   
 }
 
@@ -249,7 +248,7 @@ pCombIndDrug <- arrangeGrob(pFacetDrug,pFacetFund,ncol=1)
 
 print(pCombIndDrug)
 if (savePlot){
-  ggsave(file="trialsDrugIndustryGrid_2_14_2019.png",pCombIndDrug, units="in", width=6, height=8, dpi=600)
+  ggsave(file="trialsDrugIndustryGrid_9_16_2020.png",pCombIndDrug, units="in", width=6, height=8, dpi=600)
 }
 
 # now those two together horizontal  
@@ -264,7 +263,7 @@ pCombIndDrugHorz <- arrangeGrob(pFacetDrug,pFacetFundNoText,ncol=2)
 
 print(pCombIndDrugHorz)
 if (savePlot){
-  ggsave(file="trialsDrugIndustryGridHorz_2_14_2019.png",pCombIndDrugHorz, units="in", width=10, height=4, dpi=600)
+  ggsave(file="trialsDrugIndustryGridHorz_9_16_2020.png",pCombIndDrugHorz, units="in", width=10, height=4, dpi=600)
 }
 
 ####### make facet wrap plots
@@ -336,7 +335,7 @@ print(pTotalFundInt)
 
 
 if (savePlot){
-  ggsave(file="trialsDrugIndustryGridHorz_2_14_2019.png",pTotalFundInt, units="in", width=8, height=8, dpi=600)
+  ggsave(file="trialsDrugIndustryGridHorz_9_16_2020.png",pTotalFundInt, units="in", width=8, height=8, dpi=600)
 }
 
 
@@ -408,7 +407,7 @@ print(prowFundInt)
 
 
 if (savePlot){
-  ggsave(file="trialsDrugIndustryGridHorz3way_2_14_2019.png",prowFundInt, units="in", width=10, height=8, dpi=600)
+  ggsave(file="trialsDrugIndustryGridHorz3way_9_16_2020.png",prowFundInt, units="in", width=10, height=8, dpi=600)
 }
 
 
@@ -429,7 +428,68 @@ pTest <- arrangeGrob(pGroupSelectInt,pGroupSelectFund + theme(legend.position = 
 
 
 if (savePlot){
-  ggsave(file="trialsDrugIndustryGridHorz3wayGRIDARRANGE_2_14_2019_300.png",pTest, units="in", width=10, height=8, dpi=300)
-  ggsave(file="trialsDrugIndustryGridHorz3wayGRIDARRANGE_2_14_2019_300.tiff",pTest, units="in", width=10, height=8, dpi=300)
-  ggsave(file="trialsDrugIndustryGridHorz3wayGRIDARRANGE_2_14_2019_300.jpeg",pTest, units="in", width=10, height=8, dpi=300)
+  ggsave(file="trialsDrugIndustryGridHorz3wayGRIDARRANGE_9_16_2020_300.png",pTest, units="in", width=10, height=8, dpi=300)
+  ggsave(file="trialsDrugIndustryGridHorz3wayGRIDARRANGE_9_16_2020_300.tiff",pTest, units="in", width=10, height=8, dpi=300)
+  ggsave(file="trialsDrugIndustryGridHorz3wayGRIDARRANGE_9_16_2020_300.jpeg",pTest, units="in", width=10, height=8, dpi=300)
+}
+
+pGroupSelectFund<-ggplot(joinedTableCountGroupSelectFund, aes(x=yearStart,y=yearlyCount, group=diverseGroup, color=diverseGroup)) +
+  geom_line()+
+  geom_point() +
+  facet_wrap(~ fundingComb) +
+  labs(title='Panel B. Funding Type',x = "Year Registered",y="Number of Trials") +
+  # scale_y_continuous(breaks=seq(0,250,10)) +
+  ylim(0,ymax+10) +
+  scale_x_continuous(breaks=seq(2009,2018,1),limits=c(2009,2018)) + 
+  scale_color_jama() +
+  labs(color = 'Race-Specific Enrollment ')
+
+print(pGroupSelectFund)
+#if (savePlot){
+#  ggsave("trialsByYearFundGroup_2_14_2020.png", units="in", width=5, height=4, dpi=600)
+#}
+
+#grid.arrange(pGroupSelectInt,pGroupSelectFund,ncol=1)
+#pGroupFundInt <- arrangeGrob(pFacetDrug,pFacetFundNoText,ncol=1)
+
+#pRowTop2 <- plot_grid(pGroupSelectInt + theme(legend.position = "none"),
+#                      NULL,
+#                      ncol=2,
+#                      rel_widths = c(4,1),
+#                      rel_heights = c(1,1))
+
+prowFundInt <- plot_grid(pGroupSelectInt + theme(legend.position = "right"),
+                         pGroupSelectFund + theme(legend.position = "none"),
+                         nrow=2)
+
+#legend <- get_legend(pGroupSelectInt + theme(legend.box.margin=margin(0,0,0,12)))
+#pTotalFundInt <- prowFundInt + draw_grob(legend,1.7/4.5,0,1/3.3,0.12)
+print(prowFundInt)
+
+
+if (savePlot){
+  ggsave(file="trialsDrugIndustryGridHorz3way_9_16_2020.png",prowFundInt, units="in", width=10, height=8, dpi=600)
+}
+
+
+lay <- rbind(c(1,NA),c(2))
+grid.arrange(pGroupSelectInt,pGroupSelectFund + theme(legend.position = "none"),
+             ncol=2,
+             widths = c(8,1),
+             layout_matrix = lay
+)
+
+
+lay <- rbind(c(1,NA),c(2))
+pTest <- arrangeGrob(pGroupSelectInt,pGroupSelectFund + theme(legend.position = "none"),
+                     ncol=2,
+                     widths = c(8,1),
+                     layout_matrix = lay
+)
+
+
+if (savePlot){
+  ggsave(file="AAonly_trialsDrugIndustryGridHorz3wayGRIDARRANGE_9_16_2020_300.png",pTest, units="in", width=10, height=8, dpi=300)
+  ggsave(file="AAonly_trialsDrugIndustryGridHorz3wayGRIDARRANGE_9_16_2020_300.tiff",pTest, units="in", width=10, height=8, dpi=300)
+  ggsave(file="AAonly_trialsDrugIndustryGridHorz3wayGRIDARRANGE_9_16_2020_300.jpeg",pTest, units="in", width=10, height=8, dpi=300)
 }

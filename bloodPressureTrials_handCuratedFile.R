@@ -14,16 +14,18 @@ library(here)
 #########################################
 # boolean values for saving, username and password for accessing AACT database
 
-savePlot = FALSE
-saveData = FALSE
-userAACT="ENTER_USER_NAME"
-passwordAACT="ENTER_PASSWORD"
+savePlot = TRUE
+saveData = TRUE
+userAACT="djcald"
+passwordAACT="DD968radford"
 
 #########################################
 # set up data directories, load in hand curated file
 rootDir = here()
-dataFile = here("NCT_Race_All.csv")
+dataFile = here("htn_race_final.csv")
 handCurated <- read.csv(file=dataFile, header=TRUE, sep=",",na.strings=c(""))
+
+handCurated <- handCurated %>% select(nct_id,diverse)
 
 #########################################
 # create search parameters
@@ -32,9 +34,6 @@ countriesList = c("United States")
 `%nin%` = Negate(`%in%`)
 
 #########################################
-
-names(handCurated)[1] <- "nct_id"
-names(handCurated)[2] <- "diverse"
 
 # connect to database
 drv <- dbDriver('PostgreSQL')
@@ -204,18 +203,18 @@ summary(lmRatio)
 
 ########################
 if (saveData){
-  saveRDS(joinedTable, file = "htnRdata_2_14_2020.rds")
-  write.csv(joinedTable,'htnTableTotal_2_14_2020.csv')
-  write.csv(joinedTableDiverseDiscontinued,'htnTableDiscDiverse_2_14_2020.csv')
-  write.csv(joinedTableSummarizeInterv,'htnTableInterv_2_14_2020.csv')
-  write.csv(joinedTableSummarizeType,'htnTableType_2_14_2020.csv')
-  write.csv(joinedTableSummarizePhase,'htnTablePhase_2_14_2020.csv')
-  write.csv(joinedTableSummarizeAgency,'htnTableAgency_2_14_2020.csv')
-  write.csv(joinedTableSummarizeReported,'htnTableReported_2_14_2020.csv')
-  write.csv(joinedTableSummarizeSite,'htnTableSite_2_14_2020.csv')
-  write.csv(joinedTableSummarizeStatus,'htnTableStatus_2_14_2020.csv')
-  write.csv(joinedTableSummarizeOverallStatus,'htnTableOverallStatus_2_14_2020.csv')
-  write.csv(joinedTableSummarizePubCount,'htnTablePubCount_2_14_2020.csv')
+  saveRDS(joinedTable, file = "htnRdata_9_16_2020.rds")
+  write.csv(joinedTable,'htnTableTotal_9_16_2020.csv')
+  write.csv(joinedTableDiverseDiscontinued,'htnTableDiscDiverse_9_16_2020.csv')
+  write.csv(joinedTableSummarizeInterv,'htnTableInterv_9_16_2020.csv')
+  write.csv(joinedTableSummarizeType,'htnTableType_9_16_2020.csv')
+  write.csv(joinedTableSummarizePhase,'htnTablePhase_9_16_2020.csv')
+  write.csv(joinedTableSummarizeAgency,'htnTableAgency_9_16_2020.csv')
+  write.csv(joinedTableSummarizeReported,'htnTableReported_9_16_2020.csv')
+  write.csv(joinedTableSummarizeSite,'htnTableSite_9_16_2020.csv')
+  write.csv(joinedTableSummarizeStatus,'htnTableStatus_9_16_2020.csv')
+  write.csv(joinedTableSummarizeOverallStatus,'htnTableOverallStatus_9_16_2020.csv')
+  write.csv(joinedTableSummarizePubCount,'htnTablePubCount_9_16_2020.csv')
 }
 
 #########################################
@@ -232,7 +231,7 @@ pInd<-ggplot(joinedTableCount, aes(x=yearStart,y=yearlyCount, group=diverse, col
 
 print(pInd)
 if (savePlot){
-  ggsave("trialsByYearConditions_2_14_2020.png", units="in", width=5, height=4, dpi=600)
+  ggsave("trialsByYearConditions_9_16_2020.png", units="in", width=5, height=4, dpi=600)
 }
 
 pComb<-ggplot(joinedTableCountGroup, aes(x=yearStart,y=yearlyCount, group=diverseGroup, color=diverseGroup)) +
@@ -244,7 +243,7 @@ pComb<-ggplot(joinedTableCountGroup, aes(x=yearStart,y=yearlyCount, group=divers
   scale_color_jama()
 print(pComb)
 if (savePlot){
-  ggsave("trialsByYearConditionsComb_2_14_2020.png", units="in", width=5, height=4, dpi=600)
+  ggsave("trialsByYearConditionsComb_9_16_2020.png", units="in", width=5, height=4, dpi=600)
 }
 
 pRatio<-ggplot(joinedTableRatio, aes(x=year,y=ratio)) +
@@ -255,7 +254,7 @@ pRatio<-ggplot(joinedTableRatio, aes(x=year,y=ratio)) +
   ylim(0,max(joinedTableRatio$ratio)+0.015) 
 print(pRatio)
 if (savePlot){
-  ggsave("trialsByYearRatio_2_14_2020.png", units="in", width=5, height=4, dpi=600)
+  ggsave("trialsByYearRatio_9_16_2020.png", units="in", width=5, height=4, dpi=600)
 }
 
 pRatioTotal<-ggplot(joinedTableRatio, aes(x=year,y=ratioTotal)) +
@@ -267,7 +266,7 @@ pRatioTotal<-ggplot(joinedTableRatio, aes(x=year,y=ratioTotal)) +
   scale_color_jama()
 print(pRatioTotal)
 if (savePlot){
-  ggsave("trialsByYearRatioTotal_2_14_2020.png", units="in", width=5, height=4, dpi=600)
+  ggsave("trialsByYearRatioTotal_9_16_2020.png", units="in", width=5, height=4, dpi=600)
 }
 
 prow <- plot_grid(pComb + theme(legend.position = "none"),
@@ -283,7 +282,7 @@ pTotal <- prow + draw_grob(legend,0.9/4.5,0,.3/3.3,0.8)
 print(pTotal)
 
 if (savePlot){
-  save_plot('trialsByYearGroupGrid_2_14_2020.png', pTotal, ncol = 2, nrow = 1, base_height = 4, base_width=6,dpi=600)
+  save_plot('trialsByYearGroupGrid_9_16_2020.png', pTotal, ncol = 2, nrow = 1, base_height = 4, base_width=6,dpi=600)
 }
 
 prowInd <- plot_grid(pInd + theme(legend.position = "none"),
@@ -299,7 +298,7 @@ pTotalInd <- prowInd + draw_grob(legend,1.4/4.5,0,.4/3.3,0.75)
 print(pTotalInd)
 
 if (savePlot){
-  save_plot('trialsByYearGroupGridInd_2_14_2020.png', pTotalInd, ncol = 2, nrow = 1, base_height = 4, base_width=6,dpi=600)
+  save_plot('trialsByYearGroupGridInd_9_16_2020.png', pTotalInd, ncol = 2, nrow = 1, base_height = 4, base_width=6,dpi=600)
 }
 
 grid.arrange(pComb,pRatioTotal,ncol=2)
@@ -307,7 +306,7 @@ pCombTotal <- arrangeGrob(pInd,pRatioTotal,ncol=2)
 
 #print(pComb)
 if (savePlot){
-  ggsave(file="trialsByYearGroupGridTotal_2_14_2020.png",pCombTotal, units="in", width=10, height=4, dpi=600)
+  ggsave(file="trialsByYearGroupGridTotal_9_16_2020.png",pCombTotal, units="in", width=10, height=4, dpi=600)
 }
 
 pHist<-ggplot(joinedTable, aes(x=numMissing)) +
@@ -316,7 +315,7 @@ pHist<-ggplot(joinedTable, aes(x=numMissing)) +
   xlim(0,8)
 print(pHist)
 if (savePlot){
-  ggsave("trialsByYearNumMissing_2_14_2020.png", units="in", width=5, height=4, dpi=600)
+  ggsave("trialsByYearNumMissing_9_16_2020.png", units="in", width=5, height=4, dpi=600)
 }
 
 # find max y count values of drug and industry categories 
@@ -345,7 +344,7 @@ pFacetFund <- pFacetFund + facet_wrap(~industryNonIndustry)
 
 print(pFacetFund)
 if (savePlot){
-  ggsave("trialsByIndustrySpecific_2_14_2020.png", units="in", width=5, height=4, dpi=600)
+  ggsave("trialsByIndustrySpecific_9_16_2020.png", units="in", width=5, height=4, dpi=600)
 }
 
 # now those two together 
@@ -354,7 +353,7 @@ pCombIndDrug <- arrangeGrob(pFacetDrug,pFacetFund,ncol=1)
 
 print(pCombIndDrug)
 if (savePlot){
-  ggsave(file="trialsDrugIndustryGrid_2_14_2019.png",pCombIndDrug, units="in", width=6, height=8, dpi=600)
+  ggsave(file="trialsDrugIndustryGrid_9_16_2020.png",pCombIndDrug, units="in", width=6, height=8, dpi=600)
 }
 
 # now those two together horizontal  
@@ -369,7 +368,7 @@ pCombIndDrugHorz <- arrangeGrob(pFacetDrug,pFacetFundNoText,ncol=2)
 
 print(pCombIndDrugHorz)
 if (savePlot){
-  ggsave(file="trialsDrugIndustryGridHorz_2_14_2019.png",pCombIndDrugHorz, units="in", width=10, height=4, dpi=600)
+  ggsave(file="trialsDrugIndustryGridHorz_9_16_2020.png",pCombIndDrugHorz, units="in", width=10, height=4, dpi=600)
 }
 
 ####### make facet wrap plots
@@ -424,7 +423,7 @@ print(pTotalFundInt)
 
 
 if (savePlot){
-  ggsave(file="trialsDrugIndustryGridHorz_2_14_2019.png",pTotalFundInt, units="in", width=8, height=8, dpi=600)
+  ggsave(file="trialsDrugIndustryGridHorz_9_16_2020.png",pTotalFundInt, units="in", width=8, height=8, dpi=600)
 }
 
 
@@ -471,7 +470,7 @@ print(prowFundInt)
 
 
 if (savePlot){
-  ggsave(file="trialsDrugIndustryGridHorz3way_2_14_2019.png",prowFundInt, units="in", width=10, height=8, dpi=600)
+  ggsave(file="trialsDrugIndustryGridHorz3way_9_16_2020.png",prowFundInt, units="in", width=10, height=8, dpi=600)
 }
 
 
@@ -490,7 +489,7 @@ pTest <- arrangeGrob(pGroupSelectInt,pGroupSelectFund + theme(legend.position = 
 )
 
 if (savePlot){
-  ggsave(file="trialsDrugIndustryGridHorz3wayGRIDARRANGE_2_14_2019_300.png",pTest, units="in", width=10, height=8, dpi=300)
-  ggsave(file="trialsDrugIndustryGridHorz3wayGRIDARRANGE_2_14_2019_300.tiff",pTest, units="in", width=10, height=8, dpi=300)
-  ggsave(file="trialsDrugIndustryGridHorz3wayGRIDARRANGE_2_14_2019_300.jpeg",pTest, units="in", width=10, height=8, dpi=300)
+  ggsave(file="trialsDrugIndustryGridHorz3wayGRIDARRANGE_9_16_2020_300.png",pTest, units="in", width=10, height=8, dpi=300)
+  ggsave(file="trialsDrugIndustryGridHorz3wayGRIDARRANGE_9_16_2020_300.tiff",pTest, units="in", width=10, height=8, dpi=300)
+  ggsave(file="trialsDrugIndustryGridHorz3wayGRIDARRANGE_9_16_2020_300.jpeg",pTest, units="in", width=10, height=8, dpi=300)
 }
